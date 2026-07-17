@@ -3,15 +3,20 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import sqlite3
 import tempfile
 import unittest
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 from curation.apply_reviews import REQUIRED_COLUMNS, apply_reviews
-from publication.publish_dataset import EXPORT_COLUMNS, publish_dataset
-
+from publication.publish_dataset import (
+    EXPORT_COLUMNS,
+    _replace_output_pair,
+    publish_dataset,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_DB = PROJECT_ROOT / "data/generated/stability_constants_canonical.db"
@@ -21,6 +26,40 @@ def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     digest.update(path.read_bytes())
     return digest.hexdigest()
+
+
+class PublicationOutputTests(unittest.TestCase):
+    def test_output_pair_rolls_back_if_second_install_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first_target = root / "dataset.csv"
+            second_target = root / "manifest.json"
+            first_temporary = root / "dataset.tmp"
+            second_temporary = root / "manifest.tmp"
+            first_target.write_text("old dataset", encoding="utf-8")
+            second_target.write_text("old manifest", encoding="utf-8")
+            first_temporary.write_text("new dataset", encoding="utf-8")
+            second_temporary.write_text("new manifest", encoding="utf-8")
+            original_replace = os.replace
+
+            def fail_second_install(source, target):
+                if Path(source) == second_temporary:
+                    raise OSError("simulated install failure")
+                return original_replace(source, target)
+
+            with patch(
+                "publication.publish_dataset.os.replace",
+                side_effect=fail_second_install,
+            ), self.assertRaisesRegex(OSError, "simulated"):
+                _replace_output_pair(
+                    (
+                        (first_temporary, first_target),
+                        (second_temporary, second_target),
+                    )
+                )
+
+            self.assertEqual(first_target.read_text(encoding="utf-8"), "old dataset")
+            self.assertEqual(second_target.read_text(encoding="utf-8"), "old manifest")
 
 
 @unittest.skipUnless(CANONICAL_DB.is_file(), "canonical candidate DB not available")

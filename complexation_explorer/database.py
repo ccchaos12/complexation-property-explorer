@@ -5,11 +5,12 @@ from __future__ import annotations
 import hashlib
 import os
 import sqlite3
+from collections.abc import Iterable
 from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
+from .io_utils import readonly_sqlite_uri
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DB_PATH = PROJECT_ROOT / "data/generated/stability_constants_canonical.db"
@@ -69,7 +70,7 @@ def resolve_database_path(path: str | Path | None = None) -> Path:
 def connect_readonly(path: str | Path | None = None) -> sqlite3.Connection:
     database_path = resolve_database_path(path)
     connection = sqlite3.connect(
-        f"file:{database_path.as_posix()}?mode=ro",
+        readonly_sqlite_uri(database_path),
         uri=True,
         timeout=10,
     )
@@ -271,7 +272,7 @@ def search_constants(
         ORDER BY LOWER(m.source_code), LOWER(l.ligand_name_raw),
                  v.numeric_value, v.record_id
         LIMIT ? OFFSET ?
-    """
+    """  # noqa: S608 -- Only fixed SQL fragments and placeholders are interpolated.
     parameters.extend((limit, offset))
     with closing(connect_readonly(path)) as connection:
         rows = connection.execute(query, parameters).fetchall()

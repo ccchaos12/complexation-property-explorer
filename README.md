@@ -51,13 +51,14 @@ derived data.
 
 - A 64-bit Windows, macOS, or Linux computer
 - Python 3.11, 3.12, or 3.13
-- Internet access during the first dependency installation
-- `SRD 46 SQL.zip` from the
-  [NIST SRD 46 record](https://data.nist.gov/od/id/mds2-2154)
+- Internet access during the first start for Python dependencies and the official
+  NIST source package
 - Approximately 350 MB of free space for the source archive, Python environment, and
   generated databases
 
-The NIST archive and generated databases are deliberately excluded from Git.
+The NIST archive and generated databases are deliberately excluded from Git. The
+one-click launchers retrieve the original SQL archive directly from NIST and verify
+its published SHA-256 checksum before any conversion begins.
 
 The bundled Streamlit configuration listens only on `127.0.0.1` and disables
 anonymous Streamlit usage statistics. The app and its SQLite database remain on the
@@ -65,12 +66,9 @@ computer where they are started.
 
 ## Step-by-step setup
 
-### Windows — recommended setup
+### Windows — one-click setup
 
-The Windows path does not require PowerShell activation or command-line database
-building.
-
-#### 1. Download the project
+#### 1. Download and extract the project
 
 On the GitHub repository page, select **Code → Download ZIP**, extract the download,
 and move the extracted folder somewhere easy to find, for example:
@@ -99,50 +97,35 @@ Command Prompt or PowerShell:
 py --list
 ```
 
-#### 3. Download the NIST source archive
-
-Open the [NIST SRD 46 record](https://data.nist.gov/od/id/mds2-2154), download
-`SRD 46 SQL.zip`, and place it at this exact location inside the project:
-
-```text
-ComplexationPropertyExplorer
-└── data
-    └── raw
-        └── SRD 46 SQL.zip
-```
-
-Do not extract or rename the ZIP file.
-
-#### 4. Run the first-time setup
+#### 3. Start the app
 
 Double-click:
 
 ```text
-setup_windows.bat
+start_windows.bat
 ```
 
-The setup script will:
+Keep the terminal window open. On the first start, the launcher will:
 
 1. find Python 3.11–3.13;
 2. create the private `.venv` environment;
 3. install the pinned dependencies;
-4. convert the NIST SQL archive to SQLite;
-5. build the canonical read-only database; and
-6. start the app.
+4. download `SRD 46 SQL.zip` and the accompanying README directly from NIST;
+5. verify both files against their published SHA-256 checksums;
+6. convert the SQL archive to SQLite;
+7. build the canonical read-only database;
+8. start the local server; and
+9. open the app automatically in the default browser.
 
-The conversion can take several minutes. Keep the window open until the browser
-appears at <http://localhost:8501>.
+The first start can take several minutes. Later, double-click the same
+`start_windows.bat` file; completed download and database-build steps are validated
+and reused. A damaged or incompatible generated database is preserved and rebuilt
+automatically.
 
-#### 5. Start the app later
-
-After the first setup, double-click:
-
-```text
-run_windows.bat
-```
-
-Leave the terminal window open while using the app. Press `Ctrl+C` in that window to
-stop the local server.
+If the browser does not accept the automatic open request, use the `Ready:` address
+shown in the terminal window—normally <http://localhost:8501>. If that port is busy,
+the launcher selects the next available local port. Press `Ctrl+C` in the terminal
+window to stop the app.
 
 #### Windows manual setup
 
@@ -151,61 +134,65 @@ If you prefer to see every command, open PowerShell in the project folder and ru
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
-.\.venv\Scripts\python.exe scripts\build_srd46_sqlite.py --source "data\raw\SRD 46 SQL.zip" --output "data\generated\NIST_SRD_46_rebuilt.db" --report "data\reports\srd46_build_report.json"
-.\.venv\Scripts\python.exe -m ingestion.build_canonical --staging "data\generated\NIST_SRD_46_rebuilt.db" --output "data\generated\stability_constants_canonical.db" --report "data\reports\canonical_build_report.json"
-.\.venv\Scripts\python.exe -m streamlit run app.py
+.\.venv\Scripts\python.exe -m scripts.prepare_app
+.\.venv\Scripts\python.exe scripts\launch_app.py
 ```
 
 Replace `3.13` with `3.12` or `3.11` if that is the supported version you installed.
 
-### macOS and Linux
+### macOS — guided first start
 
-#### 1. Clone and enter the project
+#### 1. Install Python and extract the project
+
+Install Python 3.13 from the
+[official macOS downloads page](https://www.python.org/downloads/macos/). Python 3.11
+and 3.12 are also supported.
+
+Download the repository with **Code → Download ZIP**, then extract it. Git users may
+instead run:
+
+```bash
+git clone https://github.com/ccchaos12/complexation-property-explorer.git
+```
+
+#### 2. Open the extracted project folder in Terminal
+
+In Finder, right-click the extracted project folder and choose
+**Services → New Terminal at Folder**. If that option is unavailable:
+
+1. open **Terminal**;
+2. type `cd `, including the trailing space;
+3. drag the extracted project folder into the Terminal window; and
+4. press Return.
+
+#### 3. Start the app
+
+Run:
+
+```bash
+chmod +x run.command run.sh
+./run.command
+```
+
+The first start automatically creates the environment, downloads and verifies the
+official NIST package, builds both SQLite databases, starts the app, and opens the
+default browser. Existing generated databases are validated before reuse and rebuilt
+automatically if damaged. Keep the Terminal window open. Press `Ctrl+C` to stop the
+app.
+
+Later, double-click `run.command` in Finder or run `./run.command` again. If macOS
+blocks the first double-click, Control-click `run.command`, choose **Open**, and
+confirm.
+
+### Linux
 
 ```bash
 git clone https://github.com/ccchaos12/complexation-property-explorer.git
 cd complexation-property-explorer
-```
-
-Alternatively, download and extract the GitHub ZIP archive.
-
-#### 2. Add the NIST archive
-
-Download `SRD 46 SQL.zip` from the
-[NIST record](https://data.nist.gov/od/id/mds2-2154) and save it without extracting:
-
-```text
-data/raw/SRD 46 SQL.zip
-```
-
-#### 3. Create the environment and build the databases
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-lock.txt
-
-python scripts/build_srd46_sqlite.py \
-  --source "data/raw/SRD 46 SQL.zip" \
-  --output "data/generated/NIST_SRD_46_rebuilt.db" \
-  --report "data/reports/srd46_build_report.json"
-
-python -m ingestion.build_canonical \
-  --staging "data/generated/NIST_SRD_46_rebuilt.db" \
-  --output "data/generated/stability_constants_canonical.db" \
-  --report "data/reports/canonical_build_report.json"
-```
-
-#### 4. Start the app
-
-On macOS, double-click `run.command`, or run this on macOS or Linux:
-
-```bash
 ./run.sh
 ```
 
-The app opens at <http://localhost:8501>. Keep the terminal open while using it and
-press `Ctrl+C` to stop the server.
+The Linux launcher performs the same automatic preparation and browser-open flow.
 
 ## Using the app
 
@@ -234,7 +221,7 @@ Windows PowerShell:
 
 ```powershell
 $env:COMPLEXATION_DB_PATH = "C:\path\to\stability_constants_curated.db"
-.\run_windows.bat
+.\start_windows.bat
 ```
 
 ## Project structure
@@ -245,7 +232,7 @@ complexation_explorer/    Read-only queries, chemical formatting, and UI helpers
 ingestion/                Source adapters and canonical schema
 curation/                 Offline review and curated-database tools
 publication/              Verified-only dataset release workflow
-scripts/                  NIST SQL-to-SQLite conversion
+scripts/                  Official download, database preparation, and app launch tools
 tests/                    Portable and full-data tests
 data/                     Local raw/generated data and auditable build reports
 docs/                     Development and data-source documentation
@@ -288,7 +275,7 @@ Please cite the initial data source as:
 > Burgess, D. R. (2004), *NIST SRD 46. Critically Selected Stability Constants of
 > Metal Complexes: Version 8.0 for Windows*, National Institute of Standards and
 > Technology, [https://doi.org/10.18434/M32154](https://doi.org/10.18434/M32154)
-> (accessed July 16, 2026).
+> (accessed July 17, 2026).
 
 NIST-derived data is not covered by this project's software license. See
 [`DATA_NOTICE.md`](DATA_NOTICE.md) for the reuse terms, dated modification notice,

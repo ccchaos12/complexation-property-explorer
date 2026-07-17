@@ -11,8 +11,9 @@ source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
 ```
 
-Run the application with `./run.sh` after building the canonical database. To test a
-different database, set `COMPLEXATION_DB_PATH` to its absolute path.
+Run the application with `./run.sh`; the launcher prepares the canonical database
+when it is missing. To test a different database, set `COMPLEXATION_DB_PATH` to its
+absolute path.
 
 ## Architecture
 
@@ -44,6 +45,15 @@ Read [`DATA_SOURCE_INTEGRATION.md`](DATA_SOURCE_INTEGRATION.md) before implement
 new adapter.
 
 ## Canonical build
+
+The standard preparation entry point downloads and verifies the official source when
+it is missing, then builds both database layers:
+
+```bash
+python -m scripts.prepare_app
+```
+
+For an explicit manual rebuild:
 
 ```bash
 python scripts/build_srd46_sqlite.py \

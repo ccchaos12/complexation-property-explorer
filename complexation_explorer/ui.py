@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from html import escape
 from pathlib import Path
-from typing import Iterable, Sequence
 
 import streamlit as st
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 

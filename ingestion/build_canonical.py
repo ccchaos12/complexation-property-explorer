@@ -11,8 +11,8 @@ import tempfile
 from contextlib import closing
 from pathlib import Path
 
+from complexation_explorer.io_utils import require_distinct_paths
 from ingestion.adapters.nist_srd46 import NistSrd46Adapter, sha256_file
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA = PROJECT_ROOT / "ingestion/canonical_schema.sql"
@@ -30,6 +30,7 @@ def build(staging: Path, output: Path, report_path: Path, force: bool) -> dict:
     staging = staging.resolve()
     output = output.resolve()
     report_path = report_path.resolve()
+    require_distinct_paths(staging=staging, output=output, report=report_path)
     if not staging.is_file():
         raise FileNotFoundError(f"Staging database not found: {staging}")
     if output.exists() and not force:
@@ -57,6 +58,15 @@ def build(staging: Path, output: Path, report_path: Path, force: bool) -> dict:
             verified_count = connection.execute(
                 "SELECT COUNT(*) FROM verified_constant_records"
             ).fetchone()[0]
+            if integrity != "ok":
+                raise ValueError(f"Canonical database failed integrity check: {integrity}")
+            if foreign_key_errors:
+                raise ValueError(
+                    "Canonical database failed foreign-key validation: "
+                    f"{len(foreign_key_errors)} error(s)"
+                )
+            if candidate_count == 0:
+                raise ValueError("Canonical database contains no candidate records")
             connection.execute("ANALYZE")
             connection.execute("VACUUM")
 

@@ -10,7 +10,6 @@ from pathlib import Path
 
 from curation.apply_reviews import REQUIRED_COLUMNS, apply_reviews
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_DB = PROJECT_ROOT / "data/generated/stability_constants_canonical.db"
 

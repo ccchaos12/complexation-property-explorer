@@ -7,16 +7,39 @@ project intends to use [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
-- Add future source adapters only through the documented provenance workflow.
-- Add the NIST SRD 46 citation, dated derivative-work notice, and release metadata.
-- Remove internal design-audit state and non-reproducible pilot-review artifacts.
-- Rename the project and Python package to Complexation Property Explorer.
-- Rewrite the first-time setup guide with separate Windows and macOS/Linux paths.
-- Add current application screenshots and a task-oriented README.
-- Restrict Streamlit to localhost and disable anonymous usage statistics.
-- Add multi-version Linux and Windows CI, pinned Actions, Dependabot, and citation metadata.
-- Close SQLite files explicitly so temporary fixtures and rebuilt databases can be
-  replaced or removed reliably on Windows.
+No unreleased changes.
+
+## [0.3.0] - 2026-07-17
+
+### Added
+
+- Add a one-click Windows entry point that prepares and starts the app.
+- Download the original NIST SRD 46 SQL archive and accompanying README directly
+  from NIST on first launch.
+- Verify official source files against their published SHA-256 checksums before use.
+- Wait for the local Streamlit health endpoint and open the default browser
+  automatically on Windows, macOS, and Linux.
+
+### Changed
+
+- Make `run.sh` and `run.command` complete first-time environment and database
+  preparation instead of requiring a prebuilt database.
+- Rewrite first-time setup documentation around one launcher per platform.
+- Upgrade Streamlit to 1.54.0 and PyArrow to 23.0.1 to include published security
+  fixes.
+
+### Fixed
+
+- Validate the staging and canonical SQLite databases before reuse, preserve invalid
+  generated files, and rebuild them automatically.
+- Reject damaged or incompatible custom databases with a readable recovery message.
+- Encode SQLite file URIs correctly when paths contain reserved characters.
+- Select the next available local port instead of opening an unrelated service on
+  port 8501, and reliably clean up failed child processes.
+- Preserve direct script execution as well as module-based database preparation.
+- Prevent source, database, report, and publication output path collisions.
+- Roll back both publication outputs if installation of either the CSV or manifest
+  fails.
 
 ## [0.2.0] - 2026-07-16
 

@@ -17,7 +17,7 @@ The initial data source should be cited as:
 
 Donald R. Burgess (2004), *NIST SRD 46. Critically Selected Stability Constants of
 Metal Complexes: Version 8.0 for Windows*, National Institute of Standards and
-Technology, <https://doi.org/10.18434/M32154> (accessed July 16, 2026).
+Technology, <https://doi.org/10.18434/M32154> (accessed July 17, 2026).
 
 The generated canonical SQLite database is a modified derivative of the downloaded
 source package. The conversion stores source values separately from parsed fields,

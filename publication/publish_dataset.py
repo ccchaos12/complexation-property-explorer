@@ -12,9 +12,11 @@ import sqlite3
 import sys
 import tempfile
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
+from complexation_explorer.io_utils import readonly_sqlite_uri, require_distinct_paths
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -70,6 +72,42 @@ EXPORT_COLUMNS = (
 )
 
 
+def _replace_output_pair(replacements: tuple[tuple[Path, Path], ...]) -> None:
+    """Install related outputs together and restore previous files on failure."""
+    backups: dict[Path, Path] = {}
+    installed: list[Path] = []
+    try:
+        for _, target in replacements:
+            if target.exists():
+                backup = target.with_name(f".{target.name}.{uuid4().hex}.backup")
+                os.replace(target, backup)
+                backups[target] = backup
+        for temporary, target in replacements:
+            os.replace(temporary, target)
+            installed.append(target)
+    except Exception as error:
+        rollback_errors = []
+        for target in reversed(installed):
+            try:
+                target.unlink(missing_ok=True)
+            except OSError as rollback_error:
+                rollback_errors.append(str(rollback_error))
+        for target, backup in backups.items():
+            try:
+                os.replace(backup, target)
+            except OSError as rollback_error:
+                rollback_errors.append(str(rollback_error))
+        if rollback_errors:
+            raise RuntimeError(
+                "Output installation failed and rollback was incomplete: "
+                + "; ".join(rollback_errors)
+            ) from error
+        raise
+    else:
+        for backup in backups.values():
+            backup.unlink(missing_ok=True)
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -82,7 +120,7 @@ def parse_utc(value: str) -> str:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None:
         raise ValueError("approved_at_utc must include a UTC offset")
-    return parsed.astimezone(timezone.utc).isoformat()
+    return parsed.astimezone(UTC).isoformat()
 
 
 def build_data_terms(source_rows: list[sqlite3.Row]) -> list[dict]:
@@ -188,6 +226,12 @@ def publish_dataset(
     approval_path = approval_path.resolve()
     output_path = output_path.resolve()
     manifest_path = manifest_path.resolve()
+    require_distinct_paths(
+        database=database_path,
+        approval=approval_path,
+        output=output_path,
+        manifest=manifest_path,
+    )
     if not database_path.is_file():
         raise FileNotFoundError(f"Curated database not found: {database_path}")
     if not approval_path.is_file():
@@ -202,10 +246,16 @@ def publish_dataset(
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
 
     with closing(
-        sqlite3.connect(f"file:{database_path.as_posix()}?mode=ro", uri=True)
+        sqlite3.connect(readonly_sqlite_uri(database_path), uri=True)
     ) as connection:
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA query_only = ON")
+        integrity = connection.execute("PRAGMA quick_check").fetchone()[0]
+        if integrity != "ok":
+            raise ValueError(f"Curated database failed integrity check: {integrity}")
+        foreign_key_error = connection.execute("PRAGMA foreign_key_check").fetchone()
+        if foreign_key_error:
+            raise ValueError("Curated database failed foreign-key validation")
         rows = connection.execute(PUBLISH_QUERY).fetchall()
         source_ids = sorted({row["source_id"] for row in rows})
         placeholders = ", ".join("?" for _ in source_ids)
@@ -216,7 +266,7 @@ def publish_dataset(
                 FROM sources
                 WHERE source_id IN ({placeholders})
                 ORDER BY source_id
-                """,
+                """,  # noqa: S608 -- Placeholder count is derived from trusted row count.
                 source_ids,
             ).fetchall()
             if source_ids
@@ -225,24 +275,25 @@ def publish_dataset(
     if not rows:
         raise ValueError("No verified records satisfy the publication requirements")
 
-    temporary_handle = tempfile.NamedTemporaryFile(
-        mode="w",
-        encoding="utf-8",
-        newline="",
-        prefix=output_path.stem + ".",
-        suffix=".tmp.csv",
-        dir=output_path.parent,
-        delete=False,
-    )
-    temporary_path = Path(temporary_handle.name)
+    temporary_path: Path | None = None
+    temporary_manifest_path: Path | None = None
     try:
-        with temporary_handle:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            prefix=output_path.stem + ".",
+            suffix=".tmp.csv",
+            dir=output_path.parent,
+            delete=False,
+        ) as temporary_handle:
+            temporary_path = Path(temporary_handle.name)
             writer = csv.DictWriter(temporary_handle, fieldnames=EXPORT_COLUMNS)
             writer.writeheader()
             for row in rows:
                 writer.writerow(dict(row))
         output_checksum = sha256_file(temporary_path)
-        published_at = datetime.now(timezone.utc).isoformat()
+        published_at = datetime.now(UTC).isoformat()
         manifest = {
             "publication_id": approval["publication_id"],
             "training_approved": True,
@@ -275,15 +326,30 @@ def publish_dataset(
             "published_at_utc": published_at,
             "local_excel_accessed": False,
         }
-        temporary_path.replace(output_path)
-        temporary_manifest = manifest_path.with_name(manifest_path.name + ".tmp")
-        temporary_manifest.write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            prefix=manifest_path.stem + ".",
+            suffix=".tmp.json",
+            dir=manifest_path.parent,
+            delete=False,
+        ) as temporary_manifest_handle:
+            temporary_manifest_path = Path(temporary_manifest_handle.name)
+            temporary_manifest_handle.write(
+                json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
+            )
+        _replace_output_pair(
+            (
+                (temporary_path, output_path),
+                (temporary_manifest_path, manifest_path),
+            )
         )
-        os.replace(temporary_manifest, manifest_path)
         return manifest
     except Exception:
-        temporary_path.unlink(missing_ok=True)
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        if temporary_manifest_path is not None:
+            temporary_manifest_path.unlink(missing_ok=True)
         raise
 
 

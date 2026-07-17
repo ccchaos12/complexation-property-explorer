@@ -6,7 +6,6 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_DB = PROJECT_ROOT / "data/generated/stability_constants_canonical.db"
 

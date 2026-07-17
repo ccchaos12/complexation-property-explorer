@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import sqlite3
 
 import pandas as pd
 import streamlit as st
@@ -41,7 +42,6 @@ from complexation_explorer.ui import (
     reset_page_when_filters_change,
     selected_record_id_from_rows,
 )
-
 
 st.set_page_config(
     page_title="Complexation Property Explorer",
@@ -241,16 +241,23 @@ def reset_explorer_filters() -> None:
 
 try:
     database_path = resolve_database_path()
+    database_path_text = str(database_path)
+    summary = load_summary(database_path_text)
+    metals = load_metals(database_path_text)
 except FileNotFoundError:
     st.error(
-        "The canonical SQLite database was not found. Run "
-        "`python3 -m ingestion.build_canonical`."
+        "The canonical SQLite database was not found. Start the app with "
+        "`run.command`, `run.sh`, or `start_windows.bat` to prepare it automatically."
     )
     st.stop()
+except (sqlite3.DatabaseError, ValueError, KeyError) as error:
+    st.error(
+        "The selected SQLite database is damaged or incompatible with this app. "
+        "Run the platform launcher again to validate or rebuild the default database."
+    )
+    st.caption(f"Database error: {error}")
+    st.stop()
 
-database_path_text = str(database_path)
-summary = load_summary(database_path_text)
-metals = load_metals(database_path_text)
 metal_labels = {
     row["metal_id"]: chemical_markup_to_unicode(row["metal_name"]) for row in metals
 }

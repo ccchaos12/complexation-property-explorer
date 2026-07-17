@@ -29,17 +29,16 @@ else
   fi
 fi
 
-DATABASE_PATH="${COMPLEXATION_DB_PATH:-$PROJECT_DIR/data/generated/stability_constants_canonical.db}"
-if [ ! -f "$DATABASE_PATH" ]; then
-  echo "The read-only SQLite database was not found:"
-  echo "$DATABASE_PATH"
-  echo "Build it as described in data/README.md, or set COMPLEXATION_DB_PATH."
-  exit 1
-fi
-
 if [ ! -x ".venv/bin/python" ]; then
+  echo "Creating the local Python environment..."
   "$PYTHON_BIN" -m venv .venv
 fi
 
+echo "Installing or checking application dependencies..."
 .venv/bin/python -m pip install --disable-pip-version-check -r requirements-lock.txt
-exec .venv/bin/python -m streamlit run app.py
+
+echo "Preparing the official NIST source and local databases..."
+.venv/bin/python -m scripts.prepare_app
+
+echo "Starting the local app..."
+exec .venv/bin/python scripts/launch_app.py

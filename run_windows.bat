@@ -4,7 +4,7 @@ cd /d "%~dp0"
 
 if not exist ".venv\Scripts\python.exe" (
   echo The local Python environment is missing.
-  echo Double-click setup_windows.bat first.
+  echo Double-click start_windows.bat to prepare and start the app.
   goto :error
 )
 
@@ -14,20 +14,20 @@ if not defined DATABASE_PATH set "DATABASE_PATH=%CD%\data\generated\stability_co
 if not exist "%DATABASE_PATH%" (
   echo The read-only SQLite database was not found:
   echo %DATABASE_PATH%
-  echo Double-click setup_windows.bat to build it.
+  echo Double-click start_windows.bat to download and build it.
   goto :error
 )
 
 if /I "%~1"=="--check" (
-  ".venv\Scripts\python.exe" -c "import streamlit, complexation_explorer"
+  ".venv\Scripts\python.exe" scripts\launch_app.py --check
   if errorlevel 1 goto :error
   echo Windows runtime launcher check passed.
   exit /b 0
 )
 
 echo Starting Complexation Property Explorer...
-echo Your browser should open at http://localhost:8501
-".venv\Scripts\python.exe" -m streamlit run app.py
+echo The default browser will open automatically when the app is ready.
+".venv\Scripts\python.exe" scripts\launch_app.py
 exit /b %errorlevel%
 
 :error
