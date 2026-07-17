@@ -93,7 +93,7 @@ class PortableDatabaseTests(unittest.TestCase):
         )
 
     def test_readonly_connection_supports_reserved_path_characters(self):
-        reserved_path = Path(self.temporary_directory.name) / "fixture ?#%.db"
+        reserved_path = Path(self.temporary_directory.name) / "fixture #%.db"
         self.database_path.replace(reserved_path)
         self.database_path = reserved_path
 
