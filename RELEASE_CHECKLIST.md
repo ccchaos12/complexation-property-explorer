@@ -38,8 +38,8 @@
 ## GitHub configuration
 
 - [x] Add a concise repository description and relevant topics.
-- [ ] Enable branch protection and require the CI workflow.
-- [ ] Enable private vulnerability reporting.
+- [x] Enable branch protection and require the CI workflow.
+- [x] Enable private vulnerability reporting.
 - [x] Review issue and pull-request templates.
 - [x] Pin GitHub Actions to immutable commit SHAs.
-- [ ] Create an annotated version tag and release notes from `CHANGELOG.md`.
+- [x] Create an annotated version tag and release notes from `CHANGELOG.md`.
