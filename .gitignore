@@ -1,0 +1,40 @@
+# Operating-system and editor files
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Python environments, caches, and build outputs
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Local application and analysis state
+.streamlit/secrets.toml
+graphify-out/
+.hallmark/
+
+# Raw, generated, and unpublished data
+data/raw/*
+!data/raw/.gitkeep
+data/generated/*
+!data/generated/.gitkeep
+data/published/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.zip
+*.xlsx
+*.xls
+
+# Local curation and release decisions
+curation/review_decisions.csv
+publication/approval.json

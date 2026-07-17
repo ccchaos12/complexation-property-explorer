@@ -1,0 +1,44 @@
+{
+  "adapter": "NistSrd46Adapter",
+  "adapter_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "source_id": "NIST_SRD46",
+  "source_version_id": "NIST_SRD46:141269bb8c6d9e82",
+  "source_checksum_sha256": "141269bb8c6d9e8271a5b4bff35f7c9fa913938bb50a62c096847de67e382d18",
+  "staging_checksum_sha256": "04bdeaf239b7fecf4a6b7cad6db258effcea985e6c863ed6d46d6fe3b2e2c1b1",
+  "release_id": "NIST_SRD46-CANDIDATES-141269bb8c6d",
+  "counts": {
+    "sources": 1,
+    "source_versions": 1,
+    "metal_species": 230,
+    "ligands": 5750,
+    "references": 18297,
+    "constant_records": 89824,
+    "reference_candidate_links": 79956,
+    "dataset_release_records": 89824
+  },
+  "quality_flag_counts": {
+    "reported_value_not_strict_numeric": 19439,
+    "unclassified_value_type": 10758,
+    "missing_equilibrium_definition": 4
+  },
+  "relationship_quality_counts": {
+    "missing_reference": 1
+  },
+  "input": {
+    "path": "data/generated/NIST_SRD_46_rebuilt.db",
+    "sha256": "04bdeaf239b7fecf4a6b7cad6db258effcea985e6c863ed6d46d6fe3b2e2c1b1"
+  },
+  "output": {
+    "path": "data/generated/stability_constants_canonical.db",
+    "sha256": "fdc98a9a56d4427895327489cbe6464961978bdc182e9b27f8d1c6b7b4968553",
+    "size_bytes": 91414528
+  },
+  "validation": {
+    "sqlite_integrity": "ok",
+    "foreign_key_errors": 0,
+    "candidate_records": 89824,
+    "verified_records": 0,
+    "local_excel_accessed": false
+  }
+}

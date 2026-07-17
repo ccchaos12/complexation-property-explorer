@@ -1,0 +1,11 @@
+{
+  "publication_id": "ML-RELEASE-YYYYMMDD-001",
+  "approver": "Full reviewer name",
+  "approved_at_utc": "2026-07-15T20:00:00Z",
+  "purpose": "Approved stability-constant dataset for a documented machine-learning experiment.",
+  "allowed_statuses": [
+    "verified"
+  ],
+  "require_numeric_value": true,
+  "require_verified_reference": true
+}

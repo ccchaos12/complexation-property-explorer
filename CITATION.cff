@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the metadata in this file and cite
+  each underlying dataset separately as described in DATA_NOTICE.md.
+title: Complexation Property Explorer
+type: software
+authors:
+  - family-names: Chen
+    given-names: Kexin
+    alias: ccchaos12
+version: 0.2.0
+date-released: 2026-07-16
+repository-code: https://github.com/ccchaos12/complexation-property-explorer
+license: MIT
+keywords:
+  - coordination chemistry
+  - stability constants
+  - metal-ligand complexes
+  - NIST SRD 46
+  - SQLite
+  - Streamlit
+abstract: >-
+  A local, read-only research application for searching, comparing, and exporting
+  metal-ligand complexation properties from provenance-aware SQLite datasets.

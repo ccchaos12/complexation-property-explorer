@@ -1,0 +1,327 @@
+{
+  "builder_version": "1.0.0",
+  "built_at_utc": "2026-07-15T20:03:58.904028+00:00",
+  "source": {
+    "path": "data/raw/SRD 46 SQL.zip",
+    "sha256": "141269bb8c6d9e8271a5b4bff35f7c9fa913938bb50a62c096847de67e382d18",
+    "checksum_matches_nist": true,
+    "text_encoding": "cp1252"
+  },
+  "output": {
+    "path": "data/generated/NIST_SRD_46_rebuilt.db",
+    "size_bytes": 56999936,
+    "sha256": "04bdeaf239b7fecf4a6b7cad6db258effcea985e6c863ed6d46d6fe3b2e2c1b1"
+  },
+  "validation": {
+    "zip_integrity": "ok",
+    "sqlite_integrity": "ok",
+    "tables_imported": 19,
+    "source_rows_imported": 1012470,
+    "app_query_compatibility": {
+      "passed": true,
+      "sample_rows": 5,
+      "result_columns": [
+        "Metal ion",
+        "Ligand",
+        "Formula",
+        "Ligand class",
+        "Equilibrium",
+        "Temperature (C)",
+        "Ionic strength",
+        "Value type",
+        "Value",
+        "Note"
+      ]
+    },
+    "target_log_k_counts": {
+      "Co<sup>2+</sup>": 2492,
+      "Co<sup>3+</sup>": 47,
+      "Mn<sup>2+</sup>": 1036,
+      "Mn<sup>3+</sup>": 24,
+      "Ni<sup>2+</sup>": 4149,
+      "Ni<sup>3+</sup>": 7
+    },
+    "replacement_character_count": 0,
+    "source_relationship_audit": {
+      "verkn_ligand_metal_missing_ligand": 0,
+      "verkn_ligand_metal_missing_metal": 0,
+      "verkn_ligand_metal_missing_beta_definition": 4,
+      "literature_link_missing_ligand": 0,
+      "literature_link_missing_metal": 0,
+      "literature_link_missing_literature_alt": 0
+    },
+    "source_quality_warnings": [
+      "verkn_ligand_metal_missing_beta_definition: 4 unresolved source relationship(s)"
+    ]
+  },
+  "tables": {
+    "author": {
+      "rows": 1,
+      "columns": 5,
+      "primary_key": "authorID"
+    },
+    "beta_definition": {
+      "rows": 984,
+      "columns": 4,
+      "primary_key": "beta_definitionID"
+    },
+    "beta_definition_sic": {
+      "rows": 1022,
+      "columns": 4,
+      "primary_key": "beta_definitionID"
+    },
+    "comments": {
+      "rows": 0,
+      "columns": 6,
+      "primary_key": "commentsID"
+    },
+    "constanttyp": {
+      "rows": 4,
+      "columns": 4,
+      "primary_key": "constanttypID"
+    },
+    "footnote": {
+      "rows": 135,
+      "columns": 5,
+      "primary_key": "footnoteID"
+    },
+    "ligand_class": {
+      "rows": 59,
+      "columns": 4,
+      "primary_key": "ligand_classID"
+    },
+    "liganden": {
+      "rows": 5750,
+      "columns": 10,
+      "primary_key": "ligandenID"
+    },
+    "literature": {
+      "rows": 1,
+      "columns": 7,
+      "primary_key": "literatureID"
+    },
+    "literature_alt": {
+      "rows": 18297,
+      "columns": 5,
+      "primary_key": "literature_altID"
+    },
+    "metal": {
+      "rows": 230,
+      "columns": 9,
+      "primary_key": "metalID"
+    },
+    "mol_data": {
+      "rows": 4429,
+      "columns": 4,
+      "primary_key": "mol_dataID"
+    },
+    "paper": {
+      "rows": 1,
+      "columns": 5,
+      "primary_key": "paperID"
+    },
+    "solvent": {
+      "rows": 1,
+      "columns": 4,
+      "primary_key": "solventID"
+    },
+    "verk_literature_author": {
+      "rows": 1,
+      "columns": 5,
+      "primary_key": "verkn_literature_authorID"
+    },
+    "verkn_ligand_metal": {
+      "rows": 89824,
+      "columns": 16,
+      "primary_key": "verkn_ligand_metalID"
+    },
+    "verkn_ligand_metal_literature": {
+      "rows": 79956,
+      "columns": 8,
+      "primary_key": "verkn_ligand_metal_literatureID"
+    },
+    "verkn_ligand_metal_literature_sic": {
+      "rows": 721906,
+      "columns": 7,
+      "primary_key": "verkn_ligand_metal_literatureID"
+    },
+    "verkn_ligand_metal_sic": {
+      "rows": 89869,
+      "columns": 16,
+      "primary_key": "verkn_ligand_metalID"
+    }
+  },
+  "archive_members": {
+    "author.sql": {
+      "bytes": 1632,
+      "sha256": "37c3d23f93c5c5567d00d9d62608883fddcf3a48713f417564094b1eb9f216f3"
+    },
+    "author.txt": {
+      "bytes": 45,
+      "sha256": "cfae5f0008761143fa2c83dac4cdefd6021cb2fed666d41b819b666ee50682d0",
+      "non_ascii_bytes": 0
+    },
+    "beta_definition.sql": {
+      "bytes": 1602,
+      "sha256": "174beab4aee4d43a63746674bcedc42686c6912c1f5299efb3c11435d0bc540a"
+    },
+    "beta_definition.txt": {
+      "bytes": 87611,
+      "sha256": "997ca41785ab4881421030b6b7589cd15e054574a377b1d729874273ee7072c4",
+      "non_ascii_bytes": 0
+    },
+    "beta_definition_sic.sql": {
+      "bytes": 1613,
+      "sha256": "197a505604aa9a32731dabb49078f719da04a30c82492401dbdfd022ed45ef69"
+    },
+    "beta_definition_sic.txt": {
+      "bytes": 44822,
+      "sha256": "f40db2a5657d79a4631c21a3cec67ff091fc53a2718ff292858344c547a67f4a",
+      "non_ascii_bytes": 0
+    },
+    "comments.sql": {
+      "bytes": 1538,
+      "sha256": "06b3be63809f822e8fa84ec983768845518280265ce9f772c6f98bdd1ed9eaa2"
+    },
+    "comments.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "non_ascii_bytes": 0
+    },
+    "constanttyp.sql": {
+      "bytes": 1575,
+      "sha256": "8436da2365a0dde5a073b1461712404b1c85f8fa605c7a9ad74a14c2da74043f"
+    },
+    "constanttyp.txt": {
+      "bytes": 108,
+      "sha256": "6689243850dcb6cf7a9cfe4788307903b6a71591d0c0bd02de193b765337aa2d",
+      "non_ascii_bytes": 0
+    },
+    "footnote.sql": {
+      "bytes": 1598,
+      "sha256": "ee6a08f5999ece4a1c8fc62d0adcd6b2ffe65dde4a2bf8f3945119fba4192e19"
+    },
+    "footnote.txt": {
+      "bytes": 10162,
+      "sha256": "6a5db1569100857632d39c53f8222b4d3210e7ab3f574cc6cea5015e888054d9",
+      "non_ascii_bytes": 28
+    },
+    "ligand_class.sql": {
+      "bytes": 1628,
+      "sha256": "b0692fc0213e7fa3c567cca8d2aca6a31188e2913b0fe532196cd55af68c4946"
+    },
+    "ligand_class.txt": {
+      "bytes": 2782,
+      "sha256": "a9df4b6d05d79b5f00aa7a88b0f93298e13fbcf8b8c3c8edc22559a10456f01d",
+      "non_ascii_bytes": 0
+    },
+    "liganden.sql": {
+      "bytes": 1955,
+      "sha256": "0fb9ded3e410fd2b7d32b0588c41d7d358d0886558f0838fa315ca1d6e237f7a"
+    },
+    "liganden.txt": {
+      "bytes": 564611,
+      "sha256": "2cfb2e38f423ff6c46a7286130a005e8dead9689f2a7c89bffde19604f4d22ac",
+      "non_ascii_bytes": 2
+    },
+    "literature.sql": {
+      "bytes": 1617,
+      "sha256": "6f5cfd84dfd2c43fab33dc9723a54d0e21d5dc5df6b2769814eca9b56f1ea93d"
+    },
+    "literature.txt": {
+      "bytes": 41,
+      "sha256": "e140e38012a9c0a0b97cfffd3c9a05c52337f3c275737fdb1304d6ffa929d914",
+      "non_ascii_bytes": 0
+    },
+    "literature_alt.sql": {
+      "bytes": 1673,
+      "sha256": "9e2b4616b1fb8d723731515325452592e887319065c041ad0631f6ce82dd894a"
+    },
+    "literature_alt.txt": {
+      "bytes": 1994077,
+      "sha256": "cc785fcefaf1410eef88a51433ce52ed016795496d9d0552f8e08b85d46b40ce",
+      "non_ascii_bytes": 25
+    },
+    "metal.sql": {
+      "bytes": 1837,
+      "sha256": "d5775a66339ed732032a7dcffa62fa27858ffc3097548c18980cbdd8d2f352bd"
+    },
+    "metal.txt": {
+      "bytes": 13464,
+      "sha256": "eba9c18c1753566fff1af085a0c90c640585d07dc2926ebeb00e15010d6a5434",
+      "non_ascii_bytes": 0
+    },
+    "mol_data.sql": {
+      "bytes": 1561,
+      "sha256": "1d0803f8625ead73383a18e6cfef70f61d9de77a2fc0c20dab01ea05739e4d69"
+    },
+    "mol_data.txt": {
+      "bytes": 2019514,
+      "sha256": "073d940fdd8241fa664ffa41bc9d4ce22c7e870413316c2825da8ac76ef53031",
+      "non_ascii_bytes": 0
+    },
+    "paper.sql": {
+      "bytes": 1582,
+      "sha256": "df4fbb1e3ec0bf099d1f375138767d827f6498fd64dca64606042f36317411f8"
+    },
+    "paper.txt": {
+      "bytes": 45,
+      "sha256": "46f434edc97ffe8a2a0ee4500f137691f07b4436b5cea1dad621c6e2b62a042f",
+      "non_ascii_bytes": 0
+    },
+    "solvent.sql": {
+      "bytes": 1551,
+      "sha256": "1f91492b754aedbdea0994de1e28350de4d1f8d2814d211e13b392ec37d86f85"
+    },
+    "solvent.txt": {
+      "bytes": 40,
+      "sha256": "149d7adf458d63dfa49c316f34eaed4779af01e7e54b337a22472c2f7494af71",
+      "non_ascii_bytes": 0
+    },
+    "verk_literature_author.sql": {
+      "bytes": 1735,
+      "sha256": "82eee19f72189a863dd35177d3c6b4bf202f88dd8a9945cb28e9da557f0b4497"
+    },
+    "verk_literature_author.txt": {
+      "bytes": 33,
+      "sha256": "bd31b95247b3c2fda1510fa9679e6c695ebe3c1f76e9ea069adcf535d86dc942",
+      "non_ascii_bytes": 0
+    },
+    "verkn_ligand_metal.sql": {
+      "bytes": 2143,
+      "sha256": "59fd2fa81f16b23627647ca7b5535faaa9ef1594cad1a53b4874143d1e334a0f"
+    },
+    "verkn_ligand_metal.txt": {
+      "bytes": 6623342,
+      "sha256": "78d655a25168c91f8199a712d5d10271ba1896c8a8873d6bfc4894c4238327c2",
+      "non_ascii_bytes": 0
+    },
+    "verkn_ligand_metal_literature.sql": {
+      "bytes": 1972,
+      "sha256": "20feea07cebd1c08edc4a4335d003f7368d6b68d976e46d5d92f5af6f528caf9"
+    },
+    "verkn_ligand_metal_literature.txt": {
+      "bytes": 3775841,
+      "sha256": "eef0f0a3bfce280254c76cfc2dfd430152f4bd8a7baf0a21b1edc11523349634",
+      "non_ascii_bytes": 0
+    },
+    "verkn_ligand_metal_literature_sic.sql": {
+      "bytes": 1812,
+      "sha256": "49740651a1377fa907bee76a4b50bfe5e32762823581a3a8e790f191ff768447"
+    },
+    "verkn_ligand_metal_literature_sic.txt": {
+      "bytes": 33557706,
+      "sha256": "24104ee3af4b4ee59634dd87c91579fbb366295e6938952d50de6b43b533a1e7",
+      "non_ascii_bytes": 0
+    },
+    "verkn_ligand_metal_sic.sql": {
+      "bytes": 2155,
+      "sha256": "0f7f1240ee0f15987c5247d47e59244ff0c8e01d4106d8d6351179b79c660408"
+    },
+    "verkn_ligand_metal_sic.txt": {
+      "bytes": 6628973,
+      "sha256": "f812cdef1d2f980179af1e8528db6627a7d7dddc43c25cded2c3c40706948f16",
+      "non_ascii_bytes": 0
+    }
+  }
+}
