@@ -7,16 +7,24 @@ project intends to use [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
-- Add future source adapters only through the documented provenance workflow.
-- Add the NIST SRD 46 citation, dated derivative-work notice, and release metadata.
-- Remove internal design-audit state and non-reproducible pilot-review artifacts.
-- Rename the project and Python package to Complexation Property Explorer.
-- Rewrite the first-time setup guide with separate Windows and macOS/Linux paths.
-- Add current application screenshots and a task-oriented README.
-- Restrict Streamlit to localhost and disable anonymous usage statistics.
-- Add multi-version Linux and Windows CI, pinned Actions, Dependabot, and citation metadata.
-- Close SQLite files explicitly so temporary fixtures and rebuilt databases can be
-  replaced or removed reliably on Windows.
+No unreleased changes.
+
+## [0.3.0] - 2026-07-17
+
+### Added
+
+- Add a one-click Windows entry point that prepares and starts the app.
+- Download the original NIST SRD 46 SQL archive and accompanying README directly
+  from NIST on first launch.
+- Verify official source files against their published SHA-256 checksums before use.
+- Wait for the local Streamlit health endpoint and open the default browser
+  automatically on Windows, macOS, and Linux.
+
+### Changed
+
+- Make `run.sh` and `run.command` complete first-time environment and database
+  preparation instead of requiring a prebuilt database.
+- Rewrite first-time setup documentation around one launcher per platform.
 
 ## [0.2.0] - 2026-07-16
 

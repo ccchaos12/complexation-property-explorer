@@ -66,3 +66,5 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cmd /c run_windows.bat --check
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmd /c start_windows.bat --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

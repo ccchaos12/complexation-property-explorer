@@ -8,7 +8,7 @@ Python application code.
 
 Burgess, D. R. (2004), *NIST SRD 46. Critically Selected Stability Constants of
 Metal Complexes: Version 8.0 for Windows*, National Institute of Standards and
-Technology, <https://doi.org/10.18434/M32154> (accessed July 16, 2026).
+Technology, <https://doi.org/10.18434/M32154> (accessed July 17, 2026).
 
 ## Reuse terms
 
@@ -30,7 +30,7 @@ the repository's software license.
 
 ## Modification notice for this project
 
-Modified by ccchaos12 (Kexin Chen), July 15–16, 2026.
+Modified by ccchaos12 (Kexin Chen), July 15–17, 2026.
 
 The project:
 
@@ -58,9 +58,14 @@ or its transformations.
 
 ## Distribution policy for this repository
 
-The raw NIST archive and generated databases are not tracked in Git. Users obtain the
-source archive from NIST and reproduce the SQLite database locally. A future release
-of transformed data may be distributed under the dataset-specific reuse terms only
-if it includes this notice, the source citation, a dated modification description,
-and a release manifest with checksums. Large transformed databases should be
-published as versioned release assets rather than committed to Git history.
+The raw NIST archive and generated databases are not tracked in Git. The launchers
+download the original archive and dataset README directly from NIST, verify their
+published SHA-256 checksums, and reproduce the SQLite database locally. This keeps
+the standard GitHub source archive small while preserving an authoritative download
+path and exact source identity.
+
+An optional offline release bundle may redistribute the unchanged original archive
+under the dataset-specific README terms only if it also includes this notice, the
+NIST README, the source citation, and checksums. A transformed-data release must
+additionally include a dated modification description and release manifest. Large
+raw or transformed datasets belong in versioned release assets, not Git history.

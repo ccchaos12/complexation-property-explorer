@@ -5,7 +5,8 @@ from the NIST `SRD 46 SQL.zip` package.
 
 ## Directory boundaries
 
-- `raw/`: the user-provided NIST archive; read-only and excluded from Git.
+- `raw/`: the launcher-downloaded original NIST files; read-only and excluded from
+  Git.
 - `generated/`: reproducible SQLite outputs; excluded from Git.
 - `reports/`: build validation reports and source manifests; suitable for Git.
 
@@ -14,6 +15,16 @@ also does not modify the source archive in `raw/`; every SQLite output is rebuil
 `generated/`.
 
 ## Build
+
+For the normal automatic download and two-layer build:
+
+```bash
+python3 -m scripts.prepare_app
+```
+
+The command downloads the original SQL archive and dataset README from NIST when
+missing and verifies both published SHA-256 checksums. For an explicit staging-only
+build:
 
 ```bash
 python3 scripts/build_srd46_sqlite.py \
