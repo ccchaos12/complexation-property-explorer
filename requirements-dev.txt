@@ -1,2 +1,2 @@
 -r requirements-lock.txt
-ruff==0.12.0
+ruff==0.15.22

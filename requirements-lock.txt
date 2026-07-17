@@ -1,7 +1,7 @@
-altair==5.5.0
+altair==6.2.2
 attrs==26.1.0
 blinker==1.9.0
-cachetools==6.2.6
+cachetools==7.1.4
 certifi==2026.6.17
 charset-normalizer==3.4.9
 click==8.4.2
@@ -13,12 +13,12 @@ jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 MarkupSafe==3.0.3
 narwhals==2.24.0
-numpy==2.3.5
-packaging==25.0
-pandas==2.3.3
+numpy==2.4.6
+packaging==26.2
+pandas==3.0.3
 pillow==12.3.0
-protobuf==6.33.6
-pyarrow==21.0.0
+protobuf==7.35.1
+pyarrow==25.0.0
 pydeck==0.9.3
 python-dateutil==2.9.0.post0
 pytz==2026.2
@@ -27,7 +27,7 @@ requests==2.34.2
 rpds-py==2026.6.3
 six==1.17.0
 smmap==5.0.3
-streamlit==1.51.0
+streamlit==1.59.2
 tenacity==9.1.4
 toml==0.10.2
 tornado==6.5.7
