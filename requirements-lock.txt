@@ -27,7 +27,7 @@ requests==2.34.2
 rpds-py==2026.6.3
 six==1.17.0
 smmap==5.0.3
-streamlit==1.51.0
+streamlit==1.54.0
 tenacity==9.1.4
 toml==0.10.2
 tornado==6.5.7
