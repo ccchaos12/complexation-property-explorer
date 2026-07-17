@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose a focused improvement to the research workflow.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: Research task
+      description: Which coordination-chemistry task should become faster or safer?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the desired workflow and expected result.
+    validations:
+      required: true
+  - type: textarea
+    id: data_impact
+    attributes:
+      label: Data and provenance impact
+      description: Note any new source, schema, validation, or release implications.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
