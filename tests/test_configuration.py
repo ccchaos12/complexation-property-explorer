@@ -4,7 +4,6 @@ import tomllib
 import unittest
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -39,6 +38,16 @@ class ConfigurationTests(unittest.TestCase):
         self.assertIn("scripts\\launch_app.py", windows_run)
         self.assertIn("-m scripts.prepare_app", unix_run)
         self.assertIn("scripts/launch_app.py", unix_run)
+
+    def test_pinned_runtime_dependencies_include_security_fixes(self):
+        requirements = (PROJECT_ROOT / "requirements-lock.txt").read_text(encoding="utf-8")
+        runtime = (PROJECT_ROOT / "requirements.txt").read_text(encoding="utf-8")
+        pyproject = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+        self.assertIn("pyarrow==23.0.1", requirements)
+        self.assertIn("streamlit==1.54.0", requirements)
+        self.assertIn("streamlit==1.54.0", runtime)
+        self.assertIn('"streamlit==1.54.0"', pyproject)
 
 
 if __name__ == "__main__":

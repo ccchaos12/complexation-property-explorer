@@ -7,11 +7,12 @@ import json
 import re
 import sqlite3
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-from .base import SourceAdapter
+from complexation_explorer.io_utils import readonly_sqlite_uri
 
+from .base import SourceAdapter
 
 ADAPTER_VERSION = "1.0.0"
 SCHEMA_VERSION = "1.0.0"
@@ -49,10 +50,10 @@ class NistSrd46Adapter(SourceAdapter):
 
     def load(self, staging_path: Path, canonical_path: Path) -> dict:
         staging_checksum = sha256_file(staging_path)
-        built_at = datetime.now(timezone.utc).isoformat()
+        built_at = datetime.now(UTC).isoformat()
 
         with closing(
-            sqlite3.connect(f"file:{staging_path.resolve().as_posix()}?mode=ro", uri=True)
+            sqlite3.connect(readonly_sqlite_uri(staging_path), uri=True)
         ) as source, closing(sqlite3.connect(canonical_path)) as target:
             source.row_factory = sqlite3.Row
             source.execute("PRAGMA query_only = ON")

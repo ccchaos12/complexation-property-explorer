@@ -118,10 +118,14 @@ Keep the terminal window open. On the first start, the launcher will:
 9. open the app automatically in the default browser.
 
 The first start can take several minutes. Later, double-click the same
-`start_windows.bat` file; completed download and database-build steps are reused.
+`start_windows.bat` file; completed download and database-build steps are validated
+and reused. A damaged or incompatible generated database is preserved and rebuilt
+automatically.
 
-If the browser does not accept the automatic open request, visit
-<http://localhost:8501>. Press `Ctrl+C` in the terminal window to stop the app.
+If the browser does not accept the automatic open request, use the `Ready:` address
+shown in the terminal window—normally <http://localhost:8501>. If that port is busy,
+the launcher selects the next available local port. Press `Ctrl+C` in the terminal
+window to stop the app.
 
 #### Windows manual setup
 
@@ -172,7 +176,9 @@ chmod +x run.command run.sh
 
 The first start automatically creates the environment, downloads and verifies the
 official NIST package, builds both SQLite databases, starts the app, and opens the
-default browser. Keep the Terminal window open. Press `Ctrl+C` to stop the app.
+default browser. Existing generated databases are validated before reuse and rebuilt
+automatically if damaged. Keep the Terminal window open. Press `Ctrl+C` to stop the
+app.
 
 Later, double-click `run.command` in Finder or run `./run.command` again. If macOS
 blocks the first double-click, Control-click `run.command`, choose **Open**, and

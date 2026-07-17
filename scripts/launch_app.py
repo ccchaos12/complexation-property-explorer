@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import socket
 import subprocess
 import sys
 import time
@@ -12,11 +13,11 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8501
 STARTUP_TIMEOUT_SECONDS = 120
+PORT_SEARCH_ATTEMPTS = 10
 
 
 def app_url(host: str, port: int) -> str:
@@ -35,6 +36,36 @@ def is_healthy(host: str, port: int) -> bool:
         return False
 
 
+def is_port_available(host: str, port: int) -> bool:
+    """Check whether the launcher can bind a local TCP port."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.bind((host, port))
+        return True
+    except OSError:
+        return False
+
+
+def select_available_port(
+    host: str,
+    preferred_port: int,
+    attempts: int = PORT_SEARCH_ATTEMPTS,
+) -> int:
+    """Use the requested port or the next available local port."""
+    if not 1 <= preferred_port <= 65_535:
+        raise ValueError("port must be between 1 and 65535")
+    if attempts < 1:
+        raise ValueError("attempts must be at least 1")
+
+    final_port = min(preferred_port + attempts - 1, 65_535)
+    for port in range(preferred_port, final_port + 1):
+        if is_port_available(host, port):
+            return port
+    raise RuntimeError(
+        f"No available local port was found from {preferred_port} to {final_port}"
+    )
+
+
 def wait_until_ready(
     process: subprocess.Popen,
     host: str,
@@ -49,6 +80,17 @@ def wait_until_ready(
             return True
         time.sleep(0.5)
     return False
+
+
+def stop_process(process: subprocess.Popen, timeout: int = 10) -> int:
+    """Stop a child process and wait so no background process is orphaned."""
+    if process.poll() is None:
+        process.terminate()
+    try:
+        return process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        return process.wait()
 
 
 def parse_args() -> argparse.Namespace:
@@ -68,12 +110,17 @@ def main() -> int:
         print("Application launcher check passed.")
         return 0
 
-    url = app_url(args.host, args.port)
-    if is_healthy(args.host, args.port):
-        print(f"The app is already running at {url}")
-        if not args.no_browser:
-            webbrowser.open(url, new=2)
-        return 0
+    try:
+        selected_port = select_available_port(args.host, args.port)
+    except (OSError, RuntimeError, ValueError) as error:
+        print(f"ERROR: {error}")
+        return 1
+    if selected_port != args.port:
+        print(
+            f"Port {args.port} is already in use. "
+            f"Starting this app on port {selected_port} instead."
+        )
+    url = app_url(args.host, selected_port)
 
     command = [
         sys.executable,
@@ -84,20 +131,27 @@ def main() -> int:
         "--server.address",
         args.host,
         "--server.port",
-        str(args.port),
+        str(selected_port),
         "--server.headless",
         "true",
         "--browser.gatherUsageStats",
         "false",
     ]
     print("Starting Complexation Property Explorer...")
-    process = subprocess.Popen(command, cwd=PROJECT_ROOT)
     try:
-        if not wait_until_ready(process, args.host, args.port):
-            if process.poll() is None:
-                process.terminate()
-            print("ERROR: The local app did not become ready within two minutes.")
-            return process.returncode or 1
+        process = subprocess.Popen(command, cwd=PROJECT_ROOT)  # noqa: S603
+    except OSError as error:
+        print(f"ERROR: Could not start the local app: {error}")
+        return 1
+    try:
+        if not wait_until_ready(process, args.host, selected_port):
+            return_code = process.poll()
+            if return_code is None:
+                stop_process(process)
+                print("ERROR: The local app did not become ready within two minutes.")
+            else:
+                print(f"ERROR: The local app exited during startup (code {return_code}).")
+            return return_code if return_code not in (None, 0) else 1
 
         print(f"Ready: {url}")
         if not args.no_browser:
@@ -108,12 +162,8 @@ def main() -> int:
         return process.wait()
     except KeyboardInterrupt:
         print("\nStopping the local app...")
-        process.terminate()
-        try:
-            return process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            return process.wait()
+        stop_process(process)
+        return 0
 
 
 if __name__ == "__main__":

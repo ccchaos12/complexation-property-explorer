@@ -11,9 +11,10 @@ import sqlite3
 import sys
 import tempfile
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
+from complexation_explorer.io_utils import readonly_sqlite_uri, require_distinct_paths
 
 REQUIRED_COLUMNS = (
     "review_id",
@@ -49,7 +50,7 @@ def parse_utc(value: str) -> str:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None:
         raise ValueError("reviewed_at_utc must include a UTC offset")
-    return parsed.astimezone(timezone.utc).isoformat()
+    return parsed.astimezone(UTC).isoformat()
 
 
 def read_decisions(path: Path) -> list[dict]:
@@ -109,6 +110,12 @@ def apply_reviews(
     decisions_path = decisions_path.resolve()
     output_path = output_path.resolve()
     report_path = report_path.resolve()
+    require_distinct_paths(
+        canonical=canonical_path,
+        decisions=decisions_path,
+        output=output_path,
+        report=report_path,
+    )
     if not canonical_path.is_file():
         raise FileNotFoundError(f"Canonical database not found: {canonical_path}")
     if not decisions_path.is_file():
@@ -119,7 +126,7 @@ def apply_reviews(
     decisions = read_decisions(decisions_path)
     decisions_checksum = sha256_file(decisions_path)
     canonical_checksum = sha256_file(canonical_path)
-    applied_at = datetime.now(timezone.utc).isoformat()
+    applied_at = datetime.now(UTC).isoformat()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -130,7 +137,7 @@ def apply_reviews(
 
     try:
         with closing(
-            sqlite3.connect(f"file:{canonical_path.as_posix()}?mode=ro", uri=True)
+            sqlite3.connect(readonly_sqlite_uri(canonical_path), uri=True)
         ) as source, closing(sqlite3.connect(temporary_path)) as target:
             source.execute("PRAGMA query_only = ON")
             source.backup(target)
@@ -309,6 +316,13 @@ def apply_reviews(
             target.commit()
             integrity = target.execute("PRAGMA integrity_check").fetchone()[0]
             foreign_key_errors = len(target.execute("PRAGMA foreign_key_check").fetchall())
+            if integrity != "ok":
+                raise ValueError(f"Curated database failed integrity check: {integrity}")
+            if foreign_key_errors:
+                raise ValueError(
+                    "Curated database failed foreign-key validation: "
+                    f"{foreign_key_errors} error(s)"
+                )
             status_counts = {
                 row[0]: row[1]
                 for row in target.execute(

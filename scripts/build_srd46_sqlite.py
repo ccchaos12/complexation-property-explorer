@@ -12,11 +12,16 @@ import sys
 import tempfile
 import zipfile
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if __package__ in (None, ""):
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from complexation_explorer.io_utils import require_distinct_paths  # noqa: E402
+
+
 EXPECTED_ARCHIVE_SHA256 = (
     "141269bb8c6d9e8271a5b4bff35f7c9fa913938bb50a62c096847de67e382d18"
 )
@@ -160,7 +165,7 @@ def iter_rows(raw_data: bytes, schema: dict):
             )
         yield tuple(
             convert_value(mysql_unescape(value), column_type)
-            for value, column_type in zip(fields, types)
+            for value, column_type in zip(fields, types, strict=False)
         )
 
 
@@ -196,8 +201,8 @@ def insert_table(
     placeholders = ", ".join("?" for _ in column_names)
     quoted_columns = ", ".join(quote_identifier(value) for value in column_names)
     statement = (
-        f"INSERT INTO {quote_identifier(schema['table'])} "
-        f"({quoted_columns}) VALUES ({placeholders})"
+        f"INSERT INTO {quote_identifier(schema['table'])} "  # noqa: S608
+        f"({quoted_columns}) VALUES ({placeholders})"  # Identifiers are checksum-pinned.
     )
     count = 0
     batch = []
@@ -230,7 +235,7 @@ def target_counts(connection: sqlite3.Connection) -> dict:
         ORDER BY m.name_metal
         """
     ).fetchall()
-    return {name: count for name, count in rows}
+    return dict(rows)
 
 
 def app_compatibility_check(connection: sqlite3.Connection) -> dict:
@@ -327,7 +332,7 @@ def replacement_character_count(connection: sqlite3.Connection) -> int:
     )
     return sum(
         connection.execute(
-            f"SELECT COUNT(*) FROM {quote_identifier(table)} "
+            f"SELECT COUNT(*) FROM {quote_identifier(table)} "  # noqa: S608
             f"WHERE {quote_identifier(column)} LIKE ?",
             ("%\ufffd%",),
         ).fetchone()[0]
@@ -336,6 +341,7 @@ def replacement_character_count(connection: sqlite3.Connection) -> int:
 
 
 def build_database(source: Path, output: Path, report_path: Path, force: bool) -> dict:
+    require_distinct_paths(source=source, output=output, report=report_path)
     archive_hash = sha256_file(source)
     if archive_hash != EXPECTED_ARCHIVE_SHA256:
         raise ValueError(
@@ -407,7 +413,7 @@ def build_database(source: Path, output: Path, report_path: Path, force: bool) -
                 )
                 """
             )
-            built_at = datetime.now(timezone.utc).isoformat()
+            built_at = datetime.now(UTC).isoformat()
             metadata = {
                 "builder_version": BUILDER_VERSION,
                 "built_at_utc": built_at,
@@ -443,6 +449,10 @@ def build_database(source: Path, output: Path, report_path: Path, force: bool) -
                 warnings.append(
                     f"decoded text contains {replacement_characters} replacement character(s)"
                 )
+            if integrity != "ok":
+                raise ValueError(f"Built SQLite database failed integrity check: {integrity}")
+            if not compatibility["passed"]:
+                raise ValueError("Built SQLite database failed the application query check")
             report = {
                 "builder_version": BUILDER_VERSION,
                 "built_at_utc": built_at,

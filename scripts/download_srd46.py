@@ -10,8 +10,8 @@ import tempfile
 import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
-
 
 NIST_SRD46_DATASET_URL = "https://data.nist.gov/od/id/mds2-2154"
 NIST_SRD46_SQL_URL = (
@@ -59,6 +59,8 @@ def ensure_download(
     attempts: int = 3,
 ) -> str:
     """Keep a verified local file or atomically download an official copy."""
+    if urlsplit(url).scheme != "https":
+        raise ValueError("Downloads must use an HTTPS URL")
     destination = destination.resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
 
@@ -81,8 +83,11 @@ def ensure_download(
         temporary_path = Path(temporary_name)
         try:
             print(f"Downloading {label} from NIST (attempt {attempt}/{attempts})...")
-            request = Request(url, headers={"User-Agent": USER_AGENT})
-            with urlopen(request, timeout=90) as response, temporary_path.open("wb") as target:
+            request = Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
+            with urlopen(  # noqa: S310
+                request,
+                timeout=90,
+            ) as response, temporary_path.open("wb") as target:
                 total = int(response.headers.get("Content-Length", "0"))
                 downloaded = 0
                 while chunk := response.read(CHUNK_SIZE):

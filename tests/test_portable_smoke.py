@@ -5,11 +5,13 @@ import os
 import tempfile
 import unittest
 import warnings
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
 from complexation_explorer.database import (
     SearchFilters,
+    connect_readonly,
     count_constants,
     get_database_summary,
     search_constants,
@@ -90,6 +92,14 @@ class PortableDatabaseTests(unittest.TestCase):
             "NIST · 100001",
         )
 
+    def test_readonly_connection_supports_reserved_path_characters(self):
+        reserved_path = Path(self.temporary_directory.name) / "fixture ?#%.db"
+        self.database_path.replace(reserved_path)
+        self.database_path = reserved_path
+
+        with closing(connect_readonly(reserved_path)) as connection:
+            self.assertEqual(connection.execute("PRAGMA query_only").fetchone()[0], 1)
+
 
 class StreamlitSmokeTests(unittest.TestCase):
     def test_app_renders_compact_results_without_exceptions(self):
@@ -131,6 +141,121 @@ class StreamlitSmokeTests(unittest.TestCase):
                     self.assertNotIn("Quality flags", extended_columns)
                     del app
                     gc.collect()
+
+    def test_sidebar_metal_selection_and_reset_remain_consistent(self):
+        try:
+            from streamlit.testing.v1 import AppTest
+        except ImportError:
+            self.skipTest("Streamlit testing API is unavailable")
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = create_test_database(
+                Path(temporary_directory) / "fixture.db"
+            )
+            app_path = Path(__file__).resolve().parents[1] / "app.py"
+            with patch.dict(
+                os.environ,
+                {"COMPLEXATION_DB_PATH": str(database_path)},
+            ):
+                app = AppTest.from_file(str(app_path)).run(timeout=30)
+                all_metals = next(
+                    item
+                    for item in app.checkbox
+                    if item.key == "explorer_all_metals"
+                )
+                all_metals.set_value(False).run(timeout=30)
+                self.assertEqual(list(app.exception), [])
+                self.assertTrue(any("Select at least one metal" in item.value for item in app.info))
+
+                metal_selector = next(
+                    item
+                    for item in app.multiselect
+                    if item.key == "explorer_metals"
+                )
+                metal_selector.set_value(["NIST_SRD46:METAL:NI2"]).run(timeout=30)
+                self.assertEqual(list(app.exception), [])
+                self.assertGreaterEqual(len(app.dataframe), 1)
+
+                reset_button = next(
+                    item for item in app.button if item.label == "Reset filters"
+                )
+                reset_button.click().run(timeout=30)
+                self.assertTrue(
+                    next(
+                        item
+                        for item in app.checkbox
+                        if item.key == "explorer_all_metals"
+                    ).value
+                )
+                del app
+                gc.collect()
+
+    def test_record_id_search_comparison_renders_without_exceptions(self):
+        try:
+            from streamlit.testing.v1 import AppTest
+        except ImportError:
+            self.skipTest("Streamlit testing API is unavailable")
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = create_test_database(
+                Path(temporary_directory) / "fixture.db"
+            )
+            app_path = Path(__file__).resolve().parents[1] / "app.py"
+            with patch.dict(
+                os.environ,
+                {"COMPLEXATION_DB_PATH": str(database_path)},
+            ):
+                app = AppTest.from_file(str(app_path)).run(timeout=30)
+                app.radio[0].set_value("Search Record ID").run(timeout=30)
+                search_input = next(
+                    item
+                    for item in app.text_input
+                    if item.key == "explorer_compare_search_text"
+                )
+                search_input.set_value("100002")
+                next(
+                    item for item in app.button if item.label == "Find matches"
+                ).click().run(timeout=30)
+
+                matching_records = next(
+                    item
+                    for item in app.selectbox
+                    if item.key == "explorer_compare_search_record_id"
+                )
+                matching_records.set_value(
+                    "NIST_SRD46:CONSTANT:100002"
+                ).run(timeout=30)
+                self.assertEqual(list(app.exception), [])
+                comparison_tables = [
+                    item.value
+                    for item in app.dataframe
+                    if "Match" in item.value.columns
+                ]
+                self.assertEqual(len(comparison_tables), 1)
+                self.assertIn("Different", set(comparison_tables[0]["Match"]))
+                del app
+                gc.collect()
+
+    def test_incompatible_database_shows_a_recovery_message(self):
+        try:
+            from streamlit.testing.v1 import AppTest
+        except ImportError:
+            self.skipTest("Streamlit testing API is unavailable")
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = Path(temporary_directory) / "incompatible.db"
+            database_path.touch()
+            app_path = Path(__file__).resolve().parents[1] / "app.py"
+            with patch.dict(
+                os.environ,
+                {"COMPLEXATION_DB_PATH": str(database_path)},
+            ):
+                app = AppTest.from_file(str(app_path)).run(timeout=30)
+                self.assertEqual(list(app.exception), [])
+                self.assertGreaterEqual(len(app.error), 1)
+                self.assertIn("damaged or incompatible", app.error[0].value)
+                del app
+                gc.collect()
 
 
 if __name__ == "__main__":

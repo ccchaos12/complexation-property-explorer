@@ -25,6 +25,21 @@ No unreleased changes.
 - Make `run.sh` and `run.command` complete first-time environment and database
   preparation instead of requiring a prebuilt database.
 - Rewrite first-time setup documentation around one launcher per platform.
+- Upgrade Streamlit to 1.54.0 and PyArrow to 23.0.1 to include published security
+  fixes.
+
+### Fixed
+
+- Validate the staging and canonical SQLite databases before reuse, preserve invalid
+  generated files, and rebuild them automatically.
+- Reject damaged or incompatible custom databases with a readable recovery message.
+- Encode SQLite file URIs correctly when paths contain reserved characters.
+- Select the next available local port instead of opening an unrelated service on
+  port 8501, and reliably clean up failed child processes.
+- Preserve direct script execution as well as module-based database preparation.
+- Prevent source, database, report, and publication output path collisions.
+- Roll back both publication outputs if installation of either the CSV or manifest
+  fails.
 
 ## [0.2.0] - 2026-07-16
 
