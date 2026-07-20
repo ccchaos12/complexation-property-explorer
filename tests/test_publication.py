@@ -4,6 +4,7 @@ import csv
 import hashlib
 import json
 import os
+import shutil
 import sqlite3
 import tempfile
 import unittest
@@ -19,7 +20,9 @@ from publication.publish_dataset import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CANONICAL_DB = PROJECT_ROOT / "data/generated/stability_constants_canonical.db"
+CANONICAL_DB = (
+    PROJECT_ROOT / "data/generated/Complexation_Constants_Unified_rebuilt.db"
+)
 
 
 def sha256_file(path: Path) -> str:
@@ -132,11 +135,16 @@ class PublicationTests(unittest.TestCase):
 
             self.assertEqual(before, sha256_file(curated))
             self.assertTrue(manifest["training_approved"])
-            self.assertEqual(manifest["output"]["record_count"], 1)
             self.assertEqual(manifest["output"]["dataset_sha256"], sha256_file(output))
             self.assertFalse(manifest["local_excel_accessed"])
-            self.assertEqual(len(manifest["data_terms"]), 1)
-            nist_terms = manifest["data_terms"][0]
+            terms_by_source = {
+                item["source_id"]: item for item in manifest["data_terms"]
+            }
+            self.assertEqual(
+                set(terms_by_source),
+                {"NIST_SRD46", "SUPPLEMENT"},
+            )
+            nist_terms = terms_by_source["NIST_SRD46"]
             self.assertEqual(nist_terms["source_id"], "NIST_SRD46")
             self.assertEqual(nist_terms["doi"], "10.18434/M32154")
             self.assertEqual(
@@ -145,10 +153,14 @@ class PublicationTests(unittest.TestCase):
             self.assertTrue(nist_terms["distribute_notice_with_dataset"])
             with output.open("r", encoding="utf-8", newline="") as handle:
                 rows = list(csv.DictReader(handle))
+            self.assertEqual(manifest["output"]["record_count"], len(rows))
+            rows_by_id = {row["record_id"]: row for row in rows}
             self.assertEqual(tuple(rows[0]), EXPORT_COLUMNS)
-            self.assertEqual(rows[0]["record_id"], record_id)
-            self.assertEqual(rows[0]["verification_status"], "verified")
-            self.assertTrue(rows[0]["verified_reference_id"])
+            self.assertIn(record_id, rows_by_id)
+            self.assertEqual(
+                rows_by_id[record_id]["verification_status"], "verified"
+            )
+            self.assertTrue(rows_by_id[record_id]["verified_reference_id"])
             self.assertEqual(
                 json.loads(manifest_path.read_text(encoding="utf-8")), manifest
             )
@@ -161,9 +173,18 @@ class PublicationTests(unittest.TestCase):
             root = Path(directory)
             approval = root / "approval.json"
             self._write_approval(approval)
+            candidate_database = root / "candidate-only.db"
+            shutil.copy2(CANONICAL_DB, candidate_database)
+            with closing(sqlite3.connect(candidate_database)) as connection, connection:
+                connection.execute(
+                    "UPDATE constant_records SET verification_status = 'candidate'"
+                )
+                connection.execute(
+                    "UPDATE source_references SET verification_status = 'candidate'"
+                )
             with self.assertRaisesRegex(ValueError, "No verified records"):
                 publish_dataset(
-                    CANONICAL_DB,
+                    candidate_database,
                     approval,
                     root / "dataset.csv",
                     root / "dataset.manifest.json",

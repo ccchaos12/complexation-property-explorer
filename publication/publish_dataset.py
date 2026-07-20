@@ -210,6 +210,13 @@ PUBLISH_QUERY = """
       AND c.numeric_value IS NOT NULL
       AND c.verified_reference_id IS NOT NULL
       AND r.verification_status = 'verified'
+      AND NOT EXISTS (
+          SELECT 1
+          FROM constant_record_relationships AS relationship
+          WHERE relationship.duplicate_record_id = c.record_id
+            AND relationship.relationship_type
+              = 'strict_cross_source_duplicate'
+      )
     ORDER BY c.record_id
 """
 

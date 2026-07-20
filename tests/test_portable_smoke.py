@@ -69,7 +69,7 @@ class PortableDatabaseTests(unittest.TestCase):
     def test_source_namespace_prevents_short_id_collisions(self):
         summary = get_database_summary(self.database_path)
         self.assertEqual(summary["source_count"], 2)
-        self.assertEqual(summary["schema_version"], "1")
+        self.assertEqual(summary["schema_version"], "2")
         self.assertEqual(len(summary["database_sha256"]), 64)
         self.assertNotEqual(
             display_record_id(

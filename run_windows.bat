@@ -9,7 +9,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 set "DATABASE_PATH=%COMPLEXATION_DB_PATH%"
-if not defined DATABASE_PATH set "DATABASE_PATH=%CD%\data\generated\stability_constants_canonical.db"
+if not defined DATABASE_PATH set "DATABASE_PATH=%CD%\data\generated\Complexation_Constants_Unified_rebuilt.db"
 
 if not exist "%DATABASE_PATH%" (
   echo The read-only SQLite database was not found:

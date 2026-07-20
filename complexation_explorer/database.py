@@ -13,10 +13,12 @@ from pathlib import Path
 from .io_utils import readonly_sqlite_uri
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DB_PATH = PROJECT_ROOT / "data/generated/stability_constants_canonical.db"
+DEFAULT_DB_PATH = (
+    PROJECT_ROOT / "data/generated/Complexation_Constants_Unified_rebuilt.db"
+)
 VALUE_TYPES = {"K", "H", "S", "*"}
 MAX_QUERY_LIMIT = 50_000
-CANONICAL_SCHEMA_VERSION = "1"
+CANONICAL_SCHEMA_VERSION = "2"
 REACTION_TYPE_LABELS = {
     "complex_1_1": "1:1 complex · M + L ⇌ ML",
     "complex_1_2": "1:2 complex · M + 2 L ⇌ ML₂",
@@ -57,6 +59,7 @@ class SearchFilters:
     ionic_strength_max: float | None = None
     numeric_only: bool = False
     reaction_types: tuple[str, ...] = ()
+    include_strict_duplicates: bool = False
 
 
 def resolve_database_path(path: str | Path | None = None) -> Path:
@@ -149,6 +152,19 @@ def _build_where(filters: SearchFilters) -> tuple[str, list]:
 
     if filters.numeric_only:
         clauses.append("v.numeric_value IS NOT NULL")
+
+    if not filters.include_strict_duplicates:
+        clauses.append(
+            """
+            NOT EXISTS (
+                SELECT 1
+                FROM constant_record_relationships AS relationship
+                WHERE relationship.duplicate_record_id = v.record_id
+                  AND relationship.relationship_type
+                    = 'strict_cross_source_duplicate'
+            )
+            """
+        )
 
     if filters.reaction_types:
         unsupported_reactions = set(filters.reaction_types) - set(
@@ -375,6 +391,56 @@ def get_candidate_references(
     return _rows_as_dicts(rows)
 
 
+def get_record_relationships(
+    record_id: str, path: str | Path | None = None
+) -> list[dict]:
+    """Return strict duplicate relationships involving one source record."""
+    with closing(connect_readonly(path)) as connection:
+        rows = connection.execute(
+            """
+            SELECT relationship_id, duplicate_record_id, preferred_record_id,
+                   relationship_type, evidence_json,
+                   CASE
+                     WHEN duplicate_record_id = ? THEN 'duplicate'
+                     ELSE 'preferred'
+                   END AS record_role
+            FROM constant_record_relationships
+            WHERE duplicate_record_id = ? OR preferred_record_id = ?
+            ORDER BY relationship_id
+            """,
+            (record_id, record_id, record_id),
+        ).fetchall()
+    return _rows_as_dicts(rows)
+
+
+def get_ligand_identity_matches(
+    ligand_id: str, path: str | Path | None = None
+) -> list[dict]:
+    """Return exact-structure ligand identity relationships."""
+    with closing(connect_readonly(path)) as connection:
+        rows = connection.execute(
+            """
+            SELECT relationship.identity_relationship_id,
+                   relationship.source_ligand_id,
+                   source_ligand.ligand_name_raw AS source_ligand_name,
+                   relationship.matched_ligand_id,
+                   matched_ligand.ligand_name_raw AS matched_ligand_name,
+                   relationship.relationship_type,
+                   relationship.evidence_json
+            FROM ligand_identity_relationships AS relationship
+            JOIN ligands AS source_ligand
+              ON source_ligand.ligand_id = relationship.source_ligand_id
+            JOIN ligands AS matched_ligand
+              ON matched_ligand.ligand_id = relationship.matched_ligand_id
+            WHERE relationship.source_ligand_id = ?
+               OR relationship.matched_ligand_id = ?
+            ORDER BY relationship.identity_relationship_id
+            """,
+            (ligand_id, ligand_id),
+        ).fetchall()
+    return _rows_as_dicts(rows)
+
+
 def get_database_summary(path: str | Path | None = None) -> dict:
     database_path = resolve_database_path(path)
     with closing(connect_readonly(database_path)) as connection:
@@ -393,11 +459,28 @@ def get_database_summary(path: str | Path | None = None) -> dict:
             SELECT (SELECT COUNT(*) FROM metal_species) AS metals,
                    (SELECT COUNT(*) FROM ligands) AS ligands,
                    (SELECT COUNT(*) FROM active_constant_records) AS constants,
+                   (
+                     SELECT COUNT(*) FROM deduplicated_active_constant_records
+                   ) AS deduplicated_constants,
+                   (
+                     SELECT COUNT(*) FROM constant_record_relationships
+                     WHERE relationship_type = 'strict_cross_source_duplicate'
+                   ) AS strict_duplicate_records,
+                   (
+                     SELECT COUNT(*) FROM ligand_identity_relationships
+                     WHERE relationship_type = 'exact_structure'
+                   ) AS exact_structure_ligand_links,
                    (SELECT COUNT(*) FROM source_references) AS references_count
             """
         ).fetchone()
         log_k = connection.execute(
             "SELECT COUNT(*) FROM active_constant_records WHERE value_type = 'K'"
+        ).fetchone()[0]
+        deduplicated_log_k = connection.execute(
+            """
+            SELECT COUNT(*) FROM deduplicated_active_constant_records
+            WHERE value_type = 'K'
+            """
         ).fetchone()[0]
         database_user_version = connection.execute("PRAGMA user_version").fetchone()[0]
         latest_release = connection.execute(
@@ -420,6 +503,7 @@ def get_database_summary(path: str | Path | None = None) -> dict:
     return {
         **dict(totals),
         "log_k": log_k,
+        "deduplicated_log_k": deduplicated_log_k,
         "sources": source_metadata,
         "source_ids": source_ids,
         "source_count": len(source_ids),

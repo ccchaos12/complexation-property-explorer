@@ -1,6 +1,6 @@
 [project]
 name = "complexation-property-explorer"
-version = "0.3.0"
+version = "0.4.0"
 description = "A local, read-only explorer for metal-ligand complexation properties."
 readme = "README.md"
 license = { file = "LICENSE" }

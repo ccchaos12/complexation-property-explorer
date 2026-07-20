@@ -11,16 +11,18 @@ from pathlib import Path
 from curation.apply_reviews import REQUIRED_COLUMNS, apply_reviews
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CANONICAL_DB = PROJECT_ROOT / "data/generated/stability_constants_canonical.db"
+CANONICAL_DB = (
+    PROJECT_ROOT / "data/generated/Complexation_Constants_Unified_rebuilt.db"
+)
 
 
 @unittest.skipUnless(CANONICAL_DB.is_file(), "canonical candidate DB not available")
 class CurationTests(unittest.TestCase):
     def test_verified_decision_creates_separate_curated_database(self):
         with closing(sqlite3.connect(CANONICAL_DB)) as connection:
-            record_id, reference_id = connection.execute(
+            record_id, reference_id, original_status = connection.execute(
                 """
-                SELECT c.record_id, link.reference_id
+                SELECT c.record_id, link.reference_id, c.verification_status
                 FROM constant_records AS c
                 JOIN ligand_metal_reference_candidates AS link
                   ON link.ligand_id = c.ligand_id
@@ -66,7 +68,7 @@ class CurationTests(unittest.TestCase):
                     "SELECT verification_status FROM constant_records WHERE record_id = ?",
                     (record_id,),
                 ).fetchone()[0]
-                self.assertEqual(status, "candidate")
+                self.assertEqual(status, original_status)
             report_data = json.loads(report.read_text(encoding="utf-8"))
             self.assertFalse(report_data["validation"]["local_excel_accessed"])
             self.assertNotIn(str(Path.home()), report.read_text(encoding="utf-8"))

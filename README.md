@@ -5,9 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/Code%20License-MIT-1f6f68)](LICENSE)
 
 Complexation Property Explorer is a local, read-only research app for searching and
-comparing metal–ligand stability constants. It converts NIST SRD 46 into a
-reproducible SQLite database and exposes all available metal species through a
-compact Streamlit interface.
+comparing metal–ligand stability constants. It converts NIST SRD 46 and an optional
+verified local supplement into a reproducible unified SQLite database and exposes
+all available metal species through a compact Streamlit interface.
 
 The app is intended for coordination-chemistry researchers who need to move quickly
 from a broad search to an interpretable record, its experimental conditions, and its
@@ -32,15 +32,28 @@ candidate literature references.
 
 ## Data at a glance
 
-The included build reports describe the current SRD 46 conversion:
+The included build reports describe the current local unified build:
 
 | Measure | Count |
 |---|---:|
 | Metal and metal-species records | 230 |
-| Ligands | 5,750 |
-| Constant and thermodynamic records | 89,824 |
-| log K records | 60,540 |
-| Linked reference records | 18,297 |
+| Data sources | 2 |
+| Ligands | 5,931 |
+| Source constant and thermodynamic records retained | 90,105 |
+| Distinct constant records shown by default | 90,090 |
+| Source log K records retained | 60,771 |
+| Distinct log K records shown by default | 60,756 |
+| Exact-structure ligand identity links | 50 |
+| Strict cross-source duplicate constant links | 15 |
+| Reference records | 18,392 |
+
+The NIST contribution remains 5,750 ligands, 89,824 constants, and 60,540
+log K records. The optional local supplement contributes 181 source-scoped ligands,
+281 constants, and 231 log K records.
+
+The 15 strict cross-source duplicate constants remain stored and verified for
+provenance. Default searches hide the Supplement side of each pair; a sidebar
+control can include all retained source records.
 
 The NIST SQL package is a third-party extraction from the discontinued Windows
 database. NIST does not warrant that extraction and notes known structure-data
@@ -208,7 +221,7 @@ The Linux launcher performs the same automatic preparation and browser-open flow
 ## Use another database
 
 The default database is
-`data/generated/stability_constants_canonical.db`. To use a separate compatible
+`data/generated/Complexation_Constants_Unified_rebuilt.db`. To use a separate compatible
 database without changing code:
 
 macOS or Linux:
@@ -259,7 +272,7 @@ database is available locally. See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) 
 ## Data and machine-learning boundary
 
 The app does not read or modify the separate Excel workbook in the parent research
-project. Future data enters through source-specific staging and review:
+project. Additional data enters through source-specific staging and review:
 
 ```text
 immutable source → staging database → canonical database → curated database → frozen release

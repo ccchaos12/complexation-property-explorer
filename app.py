@@ -14,7 +14,9 @@ from complexation_explorer import (
     count_constants,
     get_candidate_references,
     get_database_summary,
+    get_ligand_identity_matches,
     get_record_detail,
+    get_record_relationships,
     list_ligand_classes,
     list_metals,
     resolve_database_path,
@@ -206,6 +208,7 @@ EXPLORER_FILTER_DEFAULTS = {
     "explorer_ionic_strength_min": None,
     "explorer_ionic_strength_max": None,
     "explorer_numeric_only": False,
+    "explorer_include_strict_duplicates": False,
     "explorer_reaction_types": [],
     "explorer_extended_columns": False,
     "explorer_page_size": 50,
@@ -282,8 +285,8 @@ render_page_header(
 render_stat_strip(
     [
         ("Ligands", f"{summary['ligands']:,}"),
-        ("All constant records", f"{summary['constants']:,}"),
-        ("All log K records", f"{summary['log_k']:,}"),
+        ("Distinct constant records", f"{summary['deduplicated_constants']:,}"),
+        ("Distinct log K records", f"{summary['deduplicated_log_k']:,}"),
         ("Linked references", f"{summary['references_count']:,}"),
     ]
 )
@@ -335,6 +338,14 @@ with st.sidebar:
     numeric_only = st.checkbox(
         "Only records with parsed numeric values",
         key="explorer_numeric_only",
+    )
+    include_strict_duplicates = st.checkbox(
+        f"Include {summary['strict_duplicate_records']:,} strict duplicate source records",
+        key="explorer_include_strict_duplicates",
+        help=(
+            "Exact cross-source duplicates are retained for provenance but hidden "
+            "from search results by default."
+        ),
     )
     with st.expander("Numeric ranges", expanded=False):
         st.caption("Optional filters use parsed numeric fields; source text stays unchanged.")
@@ -404,6 +415,7 @@ filters = SearchFilters(
     ionic_strength_max=ionic_strength_max,
     numeric_only=numeric_only,
     reaction_types=tuple(reaction_types),
+    include_strict_duplicates=include_strict_duplicates,
 )
 
 invalid_ranges = [
@@ -564,6 +576,40 @@ else:
             ("Data note", data_note(detail)),
         ]
     )
+    record_relationships = get_record_relationships(
+        detail["record_id"], database_path_text
+    )
+    if record_relationships:
+        relationship = record_relationships[0]
+        related_record_id = (
+            relationship["preferred_record_id"]
+            if relationship["record_role"] == "duplicate"
+            else relationship["duplicate_record_id"]
+        )
+        role_text = (
+            "This is the retained duplicate source record."
+            if relationship["record_role"] == "duplicate"
+            else "This is the preferred display record."
+        )
+        st.info(
+            f"{role_text} Exact cross-source match: `{related_record_id}`. "
+            "Both records remain verified and traceable."
+        )
+
+    ligand_matches = get_ligand_identity_matches(
+        detail["ligand_id"], database_path_text
+    )
+    if ligand_matches:
+        matched_names = []
+        for match in ligand_matches:
+            if match["source_ligand_id"] == detail["ligand_id"]:
+                matched_names.append(match["matched_ligand_name"])
+            else:
+                matched_names.append(match["source_ligand_name"])
+        st.caption(
+            "Exact structure identity match: "
+            + "; ".join(dict.fromkeys(matched_names))
+        )
 
     render_section_heading(
         "Compare records",
@@ -743,7 +789,10 @@ with st.expander("Data source and limitations"):
         - **Dataset version:** {summary['dataset_version']}.
         - **Build timestamp:** `{summary['built_at_utc']}`.
         - **Schema version:** `{summary['schema_version']}`.
-        - **Active records:** {summary['constants']:,} across {summary['source_count']} source(s).
+        - **Source records retained:** {summary['constants']:,} across {summary['source_count']} source(s).
+        - **Distinct records shown by default:** {summary['deduplicated_constants']:,}.
+        - **Strict duplicate source records:** {summary['strict_duplicate_records']:,}; retained and hidden by default.
+        - **Exact-structure ligand links:** {summary['exact_structure_ligand_links']:,}.
         - Current database: `{database_path.name}`.
         - SQLite is opened with both URI `mode=ro` and `query_only` read-only controls.
         - Source text and parsed numeric fields are stored separately.

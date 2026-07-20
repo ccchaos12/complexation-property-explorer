@@ -25,7 +25,9 @@ absolute path.
 - `curation/` applies explicit review decisions to a separate database.
 - `publication/` freezes approved records into versioned dataset releases.
 
-The public app queries `active_constant_records`. Review, promotion, and publication
+The public app queries `active_constant_records` and excludes records classified as
+the duplicate side of a strict cross-source duplicate unless the user explicitly
+includes them. Review, promotion, and publication
 remain offline operations so a browser session cannot change scientific data.
 
 ## Data invariants
@@ -65,6 +67,18 @@ python -m ingestion.build_canonical \
   --staging "data/generated/NIST_SRD_46_rebuilt.db" \
   --output "data/generated/stability_constants_canonical.db" \
   --report "data/reports/canonical_build_report.json"
+```
+
+When the verified Supplement staging database is present, build the default
+schema-v2 application database with:
+
+```bash
+python -m ingestion.build_unified \
+  --nist-staging "data/generated/NIST_SRD_46_rebuilt.db" \
+  --supplement-staging \
+    "data/generated/Local_Excel_NIST_SRD_46_Supplement_20260719.db" \
+  --output "data/generated/Complexation_Constants_Unified_rebuilt.db" \
+  --report "data/reports/unified_rebuilt_build_report.json"
 ```
 
 Use `--force` only for an intentional rebuild of a generated output.

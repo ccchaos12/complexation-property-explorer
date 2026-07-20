@@ -293,7 +293,7 @@ def apply_reviews(
                 INSERT INTO dataset_releases (
                     release_id, release_name, release_status, intended_use,
                     schema_version, created_at_utc, record_count, manifest_json
-                ) VALUES (?, ?, 'reviewed', ?, '1.0.0', ?, ?, ?)
+                ) VALUES (?, ?, 'reviewed', ?, '2.0.0', ?, ?, ?)
                 """,
                 (
                     release_id,
