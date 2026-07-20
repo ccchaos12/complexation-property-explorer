@@ -11,7 +11,9 @@ from complexation_explorer.database import (
     connect_readonly,
     count_constants,
     get_database_summary,
+    get_ligand_identity_matches,
     get_record_detail,
+    get_record_relationships,
     list_metals,
     resolve_database_path,
     search_constants,
@@ -38,12 +40,17 @@ class DatabaseTests(unittest.TestCase):
         with patch.dict("os.environ", {"COMPLEXATION_DB_PATH": configured}):
             self.assertEqual(resolve_database_path(), DEFAULT_DB_PATH.resolve())
 
-    def test_summary_matches_rebuilt_source(self):
+    def test_summary_matches_unified_sources(self):
         summary = get_database_summary()
-        self.assertEqual(summary["ligands"], 5_750)
-        self.assertEqual(summary["constants"], 89_824)
-        self.assertEqual(summary["references_count"], 18_297)
-        self.assertEqual(summary["log_k"], 60_540)
+        self.assertEqual(summary["source_ids"], ["NIST_SRD46", "SUPPLEMENT"])
+        self.assertEqual(summary["ligands"], 5_931)
+        self.assertEqual(summary["constants"], 90_105)
+        self.assertEqual(summary["deduplicated_constants"], 90_090)
+        self.assertEqual(summary["strict_duplicate_records"], 15)
+        self.assertEqual(summary["exact_structure_ligand_links"], 50)
+        self.assertEqual(summary["references_count"], 18_392)
+        self.assertEqual(summary["log_k"], 60_771)
+        self.assertEqual(summary["deduplicated_log_k"], 60_756)
 
     def test_all_metals_are_available(self):
         metals = list_metals()
@@ -56,7 +63,7 @@ class DatabaseTests(unittest.TestCase):
             row for row in list_metals() if row["metal_code"] == "Ni"
         )
         filters = SearchFilters(metal_ids=(ni_two["metal_id"],), value_type="K")
-        self.assertEqual(count_constants(filters), 4_149)
+        self.assertEqual(count_constants(filters), 4_154)
         rows = search_constants(filters, limit=5)
         self.assertEqual(len(rows), 5)
         self.assertTrue(all(row["metal_id"] == ni_two["metal_id"] for row in rows))
@@ -67,7 +74,29 @@ class DatabaseTests(unittest.TestCase):
 
     def test_empty_metal_filter_searches_all_metals(self):
         filters = SearchFilters(value_type="K")
-        self.assertEqual(count_constants(filters), 60_540)
+        self.assertEqual(count_constants(filters), 60_756)
+        self.assertEqual(
+            count_constants(
+                SearchFilters(value_type="K", include_strict_duplicates=True)
+            ),
+            60_771,
+        )
+
+    def test_duplicate_and_ligand_identity_relationships_are_queryable(self):
+        relationships = get_record_relationships("SUPPLEMENT:CONSTANT:188")
+        self.assertEqual(len(relationships), 1)
+        self.assertEqual(relationships[0]["record_role"], "duplicate")
+        self.assertEqual(
+            relationships[0]["preferred_record_id"],
+            "NIST_SRD46:CONSTANT:102025",
+        )
+
+        ligand_matches = get_ligand_identity_matches("SUPPLEMENT:LIGAND:178")
+        self.assertEqual(len(ligand_matches), 1)
+        self.assertEqual(
+            ligand_matches[0]["matched_ligand_id"],
+            "NIST_SRD46:LIGAND:5856",
+        )
 
     def test_record_detail_round_trip(self):
         row = search_constants(SearchFilters(value_type="K"), limit=1)[0]

@@ -30,7 +30,7 @@ generated database directory.
 
 ```bash
 python3 -m curation.apply_reviews \
-  --canonical "data/generated/stability_constants_canonical.db" \
+  --canonical "data/generated/Complexation_Constants_Unified_rebuilt.db" \
   --decisions "curation/review_decisions.csv" \
   --output "data/generated/stability_constants_curated.db" \
   --report "data/reports/curation_report.json"

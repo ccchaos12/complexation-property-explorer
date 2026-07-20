@@ -131,5 +131,15 @@ belong in separate model-output tables and must never overwrite experimental val
 The canonical schema, source registry, adapter interface, NIST adapter, validation
 report, candidate release, canonical app queries, offline review-decision template,
 review-to-curated generator, and verified-only machine-learning publication gate are
-implemented. The next data-source step is an Excel adapter built against a frozen copy
-of a workbook, without connecting it directly to the live application database.
+implemented. The local Excel supplement adapter and unified NIST-plus-supplement
+builder are also implemented against an immutable, checksummed staging SQLite. The
+original workbook and both source-shaped staging databases remain unchanged.
+
+Cross-source chemical identity resolution and strict duplicate classification are
+implemented in canonical schema version 2. Exact-structure ligand matches and
+strict constant duplicates are stored as explicit relationships. Both source
+records remain traceable; the application hides the duplicate side by default
+without deleting or overwriting it.
+
+The next curation step is review of formula-only identity candidates and chemically
+equivalent structures that are not byte-identical.

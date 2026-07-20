@@ -30,7 +30,7 @@ the repository's software license.
 
 ## Modification notice for this project
 
-Modified by ccchaos12 (Kexin Chen), July 15–17, 2026.
+Modified by ccchaos12 (Kexin Chen), July 15–20, 2026.
 
 The project:
 
@@ -39,14 +39,21 @@ The project:
   UTF-8;
 - adds build metadata, checksums, integrity results, and source-quality warnings;
 - maps source tables into a source-scoped canonical schema;
+- adds a separately checksummed local Excel supplement through its own immutable
+  NIST-shaped staging database and source adapter;
+- creates one unified application SQLite while preserving the NIST and supplement
+  source identities and original row IDs;
+- records exact-structure ligand identities and strict cross-source constant
+  duplicates as explicit canonical relationships without deleting either source;
 - stores parsed numeric, temperature, and ionic-strength fields separately from the
   unchanged reported text;
 - adds quality flags and candidate reference links; and
 - converts chemical markup into Unicode only for display or exported presentation,
   without overwriting source text.
 
-These transformations do not constitute independent academic verification or a
-correction of the underlying NIST values.
+The unified local release applies the project owner's declared all-verified
+application policy. That status does not constitute a new independent academic
+verification or correction of the underlying NIST values.
 
 ## Data-quality disclaimer
 

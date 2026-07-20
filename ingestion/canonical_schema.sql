@@ -1,5 +1,5 @@
 PRAGMA foreign_keys = ON;
-PRAGMA user_version = 1;
+PRAGMA user_version = 2;
 
 CREATE TABLE sources (
     source_id TEXT PRIMARY KEY,
@@ -140,6 +140,32 @@ CREATE TABLE review_events (
     applied_at_utc TEXT NOT NULL
 );
 
+CREATE TABLE ligand_identity_relationships (
+    identity_relationship_id TEXT PRIMARY KEY,
+    source_ligand_id TEXT NOT NULL REFERENCES ligands(ligand_id),
+    matched_ligand_id TEXT NOT NULL REFERENCES ligands(ligand_id),
+    relationship_type TEXT NOT NULL CHECK (
+        relationship_type IN ('exact_structure')
+    ),
+    evidence_json TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL,
+    UNIQUE (source_ligand_id, matched_ligand_id, relationship_type),
+    CHECK (source_ligand_id <> matched_ligand_id)
+);
+
+CREATE TABLE constant_record_relationships (
+    relationship_id TEXT PRIMARY KEY,
+    duplicate_record_id TEXT NOT NULL REFERENCES constant_records(record_id),
+    preferred_record_id TEXT NOT NULL REFERENCES constant_records(record_id),
+    relationship_type TEXT NOT NULL CHECK (
+        relationship_type IN ('strict_cross_source_duplicate')
+    ),
+    evidence_json TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL,
+    UNIQUE (duplicate_record_id, preferred_record_id, relationship_type),
+    CHECK (duplicate_record_id <> preferred_record_id)
+);
+
 CREATE INDEX idx_constant_records_metal ON constant_records(metal_species_id);
 CREATE INDEX idx_constant_records_ligand ON constant_records(ligand_id);
 CREATE INDEX idx_constant_records_value_type ON constant_records(value_type);
@@ -154,6 +180,14 @@ CREATE INDEX idx_reference_candidates_pair
     ON ligand_metal_reference_candidates(ligand_id, metal_species_id);
 CREATE INDEX idx_release_records_record ON dataset_release_records(record_id);
 CREATE INDEX idx_review_events_record ON review_events(record_id);
+CREATE INDEX idx_ligand_identity_source
+    ON ligand_identity_relationships(source_ligand_id);
+CREATE INDEX idx_ligand_identity_matched
+    ON ligand_identity_relationships(matched_ligand_id);
+CREATE INDEX idx_record_relationship_duplicate
+    ON constant_record_relationships(duplicate_record_id);
+CREATE INDEX idx_record_relationship_preferred
+    ON constant_record_relationships(preferred_record_id);
 
 CREATE VIEW active_constant_records AS
 SELECT *
@@ -166,3 +200,13 @@ SELECT *
 FROM constant_records
 WHERE is_active = 1
   AND verification_status = 'verified';
+
+CREATE VIEW deduplicated_active_constant_records AS
+SELECT active.*
+FROM active_constant_records AS active
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM constant_record_relationships AS relationship
+    WHERE relationship.duplicate_record_id = active.record_id
+      AND relationship.relationship_type = 'strict_cross_source_duplicate'
+);

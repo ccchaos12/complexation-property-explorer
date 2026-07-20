@@ -9,6 +9,29 @@ project intends to use [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 No unreleased changes.
 
+## [0.4.0] - 2026-07-20
+
+### Added
+
+- Add a source-scoped adapter for the immutable local Excel supplement.
+- Build one unified NIST-plus-supplement canonical SQLite with stable
+  `SUPPLEMENT:*` IDs and exact Supplement record-to-reference links.
+- Record cross-source structure, formula, and strict constant-duplicate screening
+  counts in the canonical build report.
+- Add canonical schema version 2 relationship tables for 50 exact-structure ligand
+  links and 15 strict cross-source constant duplicate links.
+- Show duplicate and ligand-identity context in record details, with a search option
+  to include retained duplicate source records.
+
+### Changed
+
+- Apply the project owner's all-verified application policy to the unified local
+  database while retaining the policy basis in the release manifest.
+- Reuse canonical NIST metal identities for Supplement records to avoid duplicate
+  metal filters.
+- Hide the duplicate side of strict cross-source matches from searches and
+  verified-only publication by default while retaining both verified source records.
+
 ## [0.3.0] - 2026-07-17
 
 ### Added

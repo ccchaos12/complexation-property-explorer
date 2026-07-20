@@ -61,7 +61,7 @@ jobs:
         run: |
           python -m venv .venv
           .\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
-          .\.venv\Scripts\python.exe -c "from pathlib import Path; from tests.support import create_test_database; create_test_database(Path('data/generated/stability_constants_canonical.db'))"
+          .\.venv\Scripts\python.exe -c "from pathlib import Path; from tests.support import create_test_database; create_test_database(Path('data/generated/Complexation_Constants_Unified_rebuilt.db'))"
           cmd /c setup_windows.bat --check
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cmd /c run_windows.bat --check

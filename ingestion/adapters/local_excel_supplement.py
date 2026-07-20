@@ -1,10 +1,8 @@
-"""NIST SRD 46 staging-to-canonical adapter."""
+"""Local Excel supplement staging-to-canonical adapter."""
 
 from __future__ import annotations
 
-import hashlib
 import json
-import re
 import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime
@@ -13,40 +11,23 @@ from pathlib import Path
 from complexation_explorer.io_utils import readonly_sqlite_uri
 
 from .base import SourceAdapter
+from .nist_srd46 import sha256_file, strict_float
 
 ADAPTER_VERSION = "1.0.0"
-SCHEMA_VERSION = "2.0.0"
-STRICT_NUMBER = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?")
-BATCH_SIZE = 5_000
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def strict_float(value: str | None) -> float | None:
-    if value is None:
-        return None
-    stripped = value.strip()
-    if not STRICT_NUMBER.fullmatch(stripped):
-        return None
-    return float(stripped)
+SOURCE_ID = "SUPPLEMENT"
+BATCH_SIZE = 1_000
 
 
 def canonical_id(prefix: str, source_record_id: int | str) -> str:
-    return f"NIST_SRD46:{prefix}:{source_record_id}"
+    return f"{SOURCE_ID}:{prefix}:{source_record_id}"
 
 
-class NistSrd46Adapter(SourceAdapter):
-    """Load the rebuilt NIST staging database into the canonical candidate schema."""
+class LocalExcelSupplementAdapter(SourceAdapter):
+    """Load the immutable NIST-shaped local Excel supplement."""
 
     @property
     def source_id(self) -> str:
-        return "NIST_SRD46"
+        return SOURCE_ID
 
     def load(self, staging_path: Path, canonical_path: Path) -> dict:
         staging_checksum = sha256_file(staging_path)
@@ -57,6 +38,7 @@ class NistSrd46Adapter(SourceAdapter):
         ) as source, closing(sqlite3.connect(canonical_path)) as target:
             source.row_factory = sqlite3.Row
             source.execute("PRAGMA query_only = ON")
+            target.row_factory = sqlite3.Row
             target.execute("PRAGMA foreign_keys = ON")
 
             source_metadata = {
@@ -64,7 +46,7 @@ class NistSrd46Adapter(SourceAdapter):
                 for row in source.execute("SELECT key, value FROM _build_metadata")
             }
             source_checksum = source_metadata["source_sha256"]
-            source_version_id = f"NIST_SRD46:{source_checksum[:16]}"
+            source_version_id = f"{SOURCE_ID}:{source_checksum[:16]}"
 
             target.execute(
                 """
@@ -75,14 +57,14 @@ class NistSrd46Adapter(SourceAdapter):
                 """,
                 (
                     self.source_id,
-                    "NIST SRD 46 Version 8.0",
-                    "legacy_sql_extraction",
-                    "National Institute of Standards and Technology",
-                    "10.18434/M32154",
-                    "https://www.nist.gov/open/license",
-                    "Third-party SQL extraction distributed by NIST AS IS. "
-                    "Derived distributions must acknowledge NIST and state the "
-                    "date and nature of modifications; see DATA_NOTICE.md.",
+                    "Local Excel NIST SRD 46 Supplement",
+                    "verified_excel_supplement",
+                    None,
+                    None,
+                    None,
+                    "Converted from the project owner's local Excel database. "
+                    "All imported records are declared verified for application use. "
+                    f"Original workbook: {source_metadata.get('source_filename', 'unknown')}.",
                 ),
             )
             target.execute(
@@ -96,7 +78,7 @@ class NistSrd46Adapter(SourceAdapter):
                 (
                     source_version_id,
                     self.source_id,
-                    "SRD 46 Version 8.0 / SQL package 2011",
+                    "Local Excel supplement 2026-07-19",
                     source_checksum,
                     staging_checksum,
                     built_at,
@@ -105,34 +87,31 @@ class NistSrd46Adapter(SourceAdapter):
                 ),
             )
 
-            metal_rows = source.execute(
-                """
-                SELECT metalID, name_metal, name_metal_pur, type, part_of, comment
-                FROM metal ORDER BY metalID
-                """
-            )
-            target.executemany(
-                """
-                INSERT INTO metal_species (
-                    metal_species_id, source_version_id, source_record_id,
-                    display_name_raw, source_code, species_type,
-                    parent_source_record_id, source_comment
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    (
-                        canonical_id("METAL", row["metalID"]),
-                        source_version_id,
-                        str(row["metalID"]),
-                        row["name_metal"],
-                        row["name_metal_pur"],
-                        row["type"],
-                        str(row["part_of"]) if row["part_of"] is not None else None,
-                        row["comment"],
-                    )
-                    for row in metal_rows
-                ),
-            )
+            used_metal_ids = {
+                row[0]
+                for row in source.execute(
+                    """
+                    SELECT metalNr FROM verkn_ligand_metal
+                    UNION
+                    SELECT metalNr FROM verkn_ligand_metal_literature
+                    """
+                )
+                if row[0] is not None
+            }
+            missing_metals = [
+                metal_id
+                for metal_id in sorted(used_metal_ids)
+                if target.execute(
+                    "SELECT 1 FROM metal_species WHERE metal_species_id = ?",
+                    (f"NIST_SRD46:METAL:{metal_id}",),
+                ).fetchone()
+                is None
+            ]
+            if missing_metals:
+                raise ValueError(
+                    "Supplement contains metal IDs not present in canonical NIST data: "
+                    + ", ".join(map(str, missing_metals))
+                )
 
             ligand_rows = source.execute(
                 """
@@ -154,8 +133,8 @@ class NistSrd46Adapter(SourceAdapter):
                 INSERT INTO ligands (
                     ligand_id, source_version_id, source_record_id,
                     ligand_name_raw, formula_raw, ligand_class_raw,
-                    structure_raw, source_comment
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    structure_raw, identity_status, source_comment
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     (
@@ -166,6 +145,7 @@ class NistSrd46Adapter(SourceAdapter):
                         row["formula"],
                         row["name_ligandclass"],
                         row["structure_raw"],
+                        "verified",
                         row["comment"],
                     )
                     for row in ligand_rows
@@ -182,8 +162,9 @@ class NistSrd46Adapter(SourceAdapter):
                 """
                 INSERT INTO source_references (
                     reference_id, source_version_id, source_record_id,
-                    reference_code, citation_raw, source_comment
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    reference_code, citation_raw, verification_status,
+                    source_comment
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     (
@@ -192,11 +173,34 @@ class NistSrd46Adapter(SourceAdapter):
                         str(row["literature_altID"]),
                         row["literature_shortcut"],
                         row["literature_alt"],
+                        "verified",
                         row["comment"],
                     )
                     for row in reference_rows
                 ),
             )
+
+            exact_reference_rows = source.execute(
+                """
+                SELECT verkn_ligand_metalNr, literature_altNr
+                FROM verkn_ligand_metal_literature_sic
+                ORDER BY verkn_ligand_metalNr
+                """
+            ).fetchall()
+            exact_references: dict[int, int] = {}
+            for row in exact_reference_rows:
+                constant_id = row["verkn_ligand_metalNr"]
+                reference_id = row["literature_altNr"]
+                if constant_id in exact_references:
+                    raise ValueError(
+                        "Supplement constant has more than one exact reference: "
+                        f"{constant_id}"
+                    )
+                if reference_id in (None, 0):
+                    raise ValueError(
+                        f"Supplement constant has no exact verified reference: {constant_id}"
+                    )
+                exact_references[constant_id] = reference_id
 
             constants_query = source.execute(
                 """
@@ -224,23 +228,32 @@ class NistSrd46Adapter(SourceAdapter):
                     ionic_strength_numeric, solvent_raw, electrolyte_raw,
                     uncertainty_raw, footnote_raw, source_comment,
                     provenance_granularity, verification_status,
-                    quality_flags_json, created_at_utc
+                    quality_flags_json, verified_reference_id, created_at_utc
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?
+                    ?, ?, ?, ?, ?
                 )
             """
             flag_counts: dict[str, int] = {}
             constant_count = 0
             batch = []
             for row in constants_query:
+                source_record_id = row["verkn_ligand_metalID"]
+                reference_source_id = exact_references.get(source_record_id)
+                if reference_source_id is None:
+                    raise ValueError(
+                        f"Supplement constant has no exact reference link: {source_record_id}"
+                    )
                 numeric_value = strict_float(row["constant"])
                 temperature_c = strict_float(row["temperature"])
                 ionic_strength = strict_float(row["ionicstrength"])
                 flags = []
                 if row["constant"] is not None and numeric_value is None:
                     flags.append("reported_value_not_strict_numeric")
-                if row["beta_definitionNr"] not in (None, 0) and row["name_beta_definition"] is None:
+                if (
+                    row["beta_definitionNr"] not in (None, 0)
+                    and row["name_beta_definition"] is None
+                ):
                     flags.append("missing_equilibrium_definition")
                 if row["name_constanttyp"] == "*":
                     flags.append("unclassified_value_type")
@@ -248,11 +261,11 @@ class NistSrd46Adapter(SourceAdapter):
                     flag_counts[flag] = flag_counts.get(flag, 0) + 1
                 batch.append(
                     (
-                        canonical_id("CONSTANT", row["verkn_ligand_metalID"]),
+                        canonical_id("CONSTANT", source_record_id),
                         source_version_id,
-                        str(row["verkn_ligand_metalID"]),
+                        str(source_record_id),
                         canonical_id("LIGAND", row["ligandenNr"]),
-                        canonical_id("METAL", row["metalNr"]),
+                        f"NIST_SRD46:METAL:{row['metalNr']}",
                         row["name_beta_definition"],
                         row["name_constanttyp"],
                         row["constant"],
@@ -268,9 +281,10 @@ class NistSrd46Adapter(SourceAdapter):
                         row["error"],
                         row["name_footnote"],
                         row["comment"],
-                        "ligand_metal_candidate_references_only",
-                        "candidate",
+                        "record_level_verified_reference",
+                        "verified",
                         json.dumps(flags, separators=(",", ":")),
+                        canonical_id("REFERENCE", reference_source_id),
                         built_at,
                     )
                 )
@@ -282,6 +296,12 @@ class NistSrd46Adapter(SourceAdapter):
                 target.executemany(insert_constant, batch)
                 constant_count += len(batch)
 
+            if constant_count != len(exact_references):
+                raise ValueError(
+                    "Supplement constant/reference count mismatch: "
+                    f"{constant_count} constants and {len(exact_references)} exact references"
+                )
+
             link_rows = source.execute(
                 """
                 SELECT verkn_ligand_metal_literatureID, ligandenNr, metalNr,
@@ -291,7 +311,6 @@ class NistSrd46Adapter(SourceAdapter):
                 """
             )
             link_count = 0
-            relationship_quality_counts = {"missing_reference": 0}
             batch = []
             insert_link = """
                 INSERT INTO ligand_metal_reference_candidates (
@@ -302,15 +321,15 @@ class NistSrd46Adapter(SourceAdapter):
             """
             for row in link_rows:
                 has_reference = row["literature_altNr"] not in (None, 0)
-                if not has_reference:
-                    relationship_quality_counts["missing_reference"] += 1
                 batch.append(
                     (
-                        canonical_id("REFLINK", row["verkn_ligand_metal_literatureID"]),
+                        canonical_id(
+                            "REFLINK", row["verkn_ligand_metal_literatureID"]
+                        ),
                         source_version_id,
                         str(row["verkn_ligand_metal_literatureID"]),
                         canonical_id("LIGAND", row["ligandenNr"]),
-                        canonical_id("METAL", row["metalNr"]),
+                        f"NIST_SRD46:METAL:{row['metalNr']}",
                         canonical_id("REFERENCE", row["literature_altNr"])
                         if has_reference
                         else None,
@@ -327,63 +346,30 @@ class NistSrd46Adapter(SourceAdapter):
                 target.executemany(insert_link, batch)
                 link_count += len(batch)
 
-            release_id = f"NIST_SRD46-CANDIDATES-{source_checksum[:12]}"
-            manifest = {
-                "source_version_id": source_version_id,
-                "record_count": constant_count,
-                "verification_status": "candidate",
-                "record_level_provenance": "unresolved",
-                "training_approved": False,
-            }
-            target.execute(
-                """
-                INSERT INTO dataset_releases (
-                    release_id, release_name, release_status, intended_use,
-                    schema_version, created_at_utc, record_count, manifest_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    release_id,
-                    "NIST SRD 46 canonical candidate release",
-                    "candidate",
-                    "exploration_only_not_approved_for_model_training",
-                    SCHEMA_VERSION,
-                    built_at,
-                    constant_count,
-                    json.dumps(manifest, sort_keys=True, separators=(",", ":")),
-                ),
-            )
-            target.execute(
-                """
-                INSERT INTO dataset_release_records (release_id, record_id)
-                SELECT ?, record_id FROM constant_records
-                """,
-                (release_id,),
-            )
             target.commit()
-
             counts = {
-                "sources": target.execute("SELECT COUNT(*) FROM sources").fetchone()[0],
-                "source_versions": target.execute("SELECT COUNT(*) FROM source_versions").fetchone()[0],
-                "metal_species": target.execute("SELECT COUNT(*) FROM metal_species").fetchone()[0],
-                "ligands": target.execute("SELECT COUNT(*) FROM ligands").fetchone()[0],
-                "references": target.execute("SELECT COUNT(*) FROM source_references").fetchone()[0],
+                "sources": 1,
+                "source_versions": 1,
+                "metals_reused_from_nist": len(used_metal_ids),
+                "ligands": target.execute(
+                    "SELECT COUNT(*) FROM ligands WHERE source_version_id = ?",
+                    (source_version_id,),
+                ).fetchone()[0],
+                "references": target.execute(
+                    "SELECT COUNT(*) FROM source_references WHERE source_version_id = ?",
+                    (source_version_id,),
+                ).fetchone()[0],
                 "constant_records": constant_count,
                 "reference_candidate_links": link_count,
-                "dataset_release_records": target.execute(
-                    "SELECT COUNT(*) FROM dataset_release_records"
-                ).fetchone()[0],
+                "exact_verified_reference_links": len(exact_references),
             }
             return {
                 "adapter": type(self).__name__,
                 "adapter_version": ADAPTER_VERSION,
-                "schema_version": SCHEMA_VERSION,
                 "source_id": self.source_id,
                 "source_version_id": source_version_id,
                 "source_checksum_sha256": source_checksum,
                 "staging_checksum_sha256": staging_checksum,
-                "release_id": release_id,
                 "counts": counts,
                 "quality_flag_counts": flag_counts,
-                "relationship_quality_counts": relationship_quality_counts,
             }
