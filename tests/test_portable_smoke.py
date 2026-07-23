@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gc
 import os
+import sqlite3
 import tempfile
 import unittest
 import warnings
@@ -102,6 +103,14 @@ class PortableDatabaseTests(unittest.TestCase):
 
 
 class StreamlitSmokeTests(unittest.TestCase):
+    @staticmethod
+    def _summary_markup(app) -> str:
+        return next(
+            item.value
+            for item in app.markdown
+            if 'class="sce-stat-strip"' in item.value
+        )
+
     def test_app_renders_compact_results_without_exceptions(self):
         try:
             from streamlit.testing.v1 import AppTest
@@ -233,6 +242,95 @@ class StreamlitSmokeTests(unittest.TestCase):
                 ]
                 self.assertEqual(len(comparison_tables), 1)
                 self.assertIn("Different", set(comparison_tables[0]["Match"]))
+                del app
+                gc.collect()
+
+    def test_prepared_export_survives_an_unrelated_rerun(self):
+        try:
+            from streamlit.testing.v1 import AppTest
+        except ImportError:
+            self.skipTest("Streamlit testing API is unavailable")
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = create_test_database(
+                Path(temporary_directory) / "fixture.db"
+            )
+            app_path = Path(__file__).resolve().parents[1] / "app.py"
+            with patch.dict(
+                os.environ,
+                {"COMPLEXATION_DB_PATH": str(database_path)},
+            ):
+                app = AppTest.from_file(str(app_path)).run(timeout=30)
+                next(
+                    item
+                    for item in app.button
+                    if item.label == "Prepare filtered CSV"
+                ).click().run(timeout=30)
+                self.assertEqual(len(app.get("download_button")), 1)
+                self.assertTrue(
+                    any(
+                        "Prepared 3 records" in item.value
+                        for item in app.caption
+                    )
+                )
+
+                app.toggle[0].set_value(True).run(timeout=30)
+                self.assertEqual(list(app.exception), [])
+                self.assertEqual(len(app.get("download_button")), 1)
+                del app
+                gc.collect()
+
+    def test_same_path_database_update_invalidates_summary_cache(self):
+        try:
+            from streamlit.testing.v1 import AppTest
+        except ImportError:
+            self.skipTest("Streamlit testing API is unavailable")
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = create_test_database(
+                Path(temporary_directory) / "fixture.db"
+            )
+            app_path = Path(__file__).resolve().parents[1] / "app.py"
+            with patch.dict(
+                os.environ,
+                {"COMPLEXATION_DB_PATH": str(database_path)},
+            ):
+                app = AppTest.from_file(str(app_path)).run(timeout=30)
+                initial_markup = self._summary_markup(app)
+                self.assertIn(
+                    '<span class="sce-stat__value">1</span>'
+                    '<span class="sce-stat__label">Linked references</span>',
+                    initial_markup,
+                )
+
+                with closing(sqlite3.connect(database_path)) as connection:
+                    with connection:
+                        connection.execute(
+                            """
+                            INSERT INTO source_references (
+                                reference_id, source_version_id, source_record_id,
+                                reference_code, citation_raw, verification_status,
+                                source_comment
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                "NIST_SRD46:REFERENCE:2",
+                                "NIST_SRD46:TEST",
+                                "2",
+                                "R2",
+                                "Second fixture reference",
+                                "candidate",
+                                None,
+                            ),
+                        )
+
+                app.run(timeout=30)
+                updated_markup = self._summary_markup(app)
+                self.assertIn(
+                    '<span class="sce-stat__value">2</span>'
+                    '<span class="sce-stat__label">Linked references</span>',
+                    updated_markup,
+                )
                 del app
                 gc.collect()
 

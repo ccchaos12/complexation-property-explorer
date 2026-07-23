@@ -54,28 +54,48 @@ inject_design_css()
 
 
 @st.cache_data(show_spinner=False)
-def load_summary(database_path: str) -> dict:
+def load_summary(
+    database_path: str,
+    database_revision: tuple[int, int, int],
+) -> dict:
+    """Load summary data, invalidating the cache when SQLite is replaced."""
     return get_database_summary(database_path)
 
 
 @st.cache_data(show_spinner=False)
-def load_metals(database_path: str) -> list[dict]:
+def load_metals(
+    database_path: str,
+    database_revision: tuple[int, int, int],
+) -> list[dict]:
+    """Load metal options for one concrete database revision."""
     return list_metals(database_path)
 
 
 @st.cache_data(show_spinner=False)
-def load_ligand_classes(database_path: str) -> list[str]:
+def load_ligand_classes(
+    database_path: str,
+    database_revision: tuple[int, int, int],
+) -> list[str]:
+    """Load ligand classes for one concrete database revision."""
     return list_ligand_classes(database_path)
 
 
 @st.cache_data(show_spinner=False, ttl=300)
-def run_count(database_path: str, filters: SearchFilters) -> int:
+def run_count(
+    database_path: str,
+    database_revision: tuple[int, int, int],
+    filters: SearchFilters,
+) -> int:
     return count_constants(filters, database_path)
 
 
 @st.cache_data(show_spinner=False, ttl=300)
 def run_search(
-    database_path: str, filters: SearchFilters, limit: int, offset: int
+    database_path: str,
+    database_revision: tuple[int, int, int],
+    filters: SearchFilters,
+    limit: int,
+    offset: int,
 ) -> list[dict]:
     return search_constants(filters, database_path, limit=limit, offset=offset)
 
@@ -83,6 +103,7 @@ def run_search(
 @st.cache_data(show_spinner=False, ttl=300)
 def run_record_id_search(
     database_path: str,
+    database_revision: tuple[int, int, int],
     query: str,
     exclude_record_id: str,
 ) -> list[dict]:
@@ -238,6 +259,10 @@ def reset_explorer_filters() -> None:
         "explorer_results_table",
         "_explorer_results_signature",
         "_explorer_results_selection_token",
+        "_explorer_export_signature",
+        "_explorer_export_csv",
+        "_explorer_export_count",
+        "_explorer_export_truncated",
     ):
         st.session_state.pop(key, None)
 
@@ -245,8 +270,14 @@ def reset_explorer_filters() -> None:
 try:
     database_path = resolve_database_path()
     database_path_text = str(database_path)
-    summary = load_summary(database_path_text)
-    metals = load_metals(database_path_text)
+    database_stat = database_path.stat()
+    database_revision = (
+        database_stat.st_ino,
+        database_stat.st_mtime_ns,
+        database_stat.st_size,
+    )
+    summary = load_summary(database_path_text, database_revision)
+    metals = load_metals(database_path_text, database_revision)
 except FileNotFoundError:
     st.error(
         "The canonical SQLite database was not found. Start the app with "
@@ -326,7 +357,7 @@ with st.sidebar:
     )
     ligand_classes = st.multiselect(
         "Ligand classes",
-        options=load_ligand_classes(database_path_text),
+        options=load_ligand_classes(database_path_text, database_revision),
         key="explorer_ligand_classes",
     )
     reaction_types = st.multiselect(
@@ -440,7 +471,7 @@ reset_page_when_filters_change(
     "explorer_page",
     (filters, page_size, all_metals),
 )
-total_rows = run_count(database_path_text, filters)
+total_rows = run_count(database_path_text, database_revision, filters)
 total_pages = max(1, math.ceil(total_rows / page_size))
 render_section_heading(
     f"Search results — {total_rows:,}",
@@ -458,7 +489,13 @@ page = render_pagination(
     total_pages=total_pages,
 )
 offset = (int(page) - 1) * page_size
-rows = run_search(database_path_text, filters, page_size, offset)
+rows = run_search(
+    database_path_text,
+    database_revision,
+    filters,
+    page_size,
+    offset,
+)
 frame = result_frame(
     rows,
     include_source_in_record_id=source_aware_record_ids,
@@ -524,25 +561,51 @@ else:
         "the details below."
     )
 
+    export_signature = (database_revision, filters, total_rows)
+    if st.session_state.get("_explorer_export_signature") != export_signature:
+        st.session_state["_explorer_export_signature"] = export_signature
+        st.session_state.pop("_explorer_export_csv", None)
+        st.session_state.pop("_explorer_export_count", None)
+        st.session_state.pop("_explorer_export_truncated", None)
+
     if st.button("Prepare filtered CSV"):
         export_limit = min(total_rows, 50_000)
         with st.spinner("Preparing the export file…"):
-            export_rows = run_search(database_path_text, filters, export_limit, 0)
+            export_rows = run_search(
+                database_path_text,
+                database_revision,
+                filters,
+                export_limit,
+                0,
+            )
             export_frame = result_frame(
                 export_rows,
                 compact_record_ids=False,
                 extended=True,
             )
+        st.session_state["_explorer_export_csv"] = export_frame.to_csv(
+            index=False
+        ).encode("utf-8-sig")
+        st.session_state["_explorer_export_count"] = len(export_rows)
+        st.session_state["_explorer_export_truncated"] = total_rows > export_limit
+
+    prepared_export = st.session_state.get("_explorer_export_csv")
+    if prepared_export is not None:
         st.download_button(
             "Download CSV",
-            data=export_frame.to_csv(index=False).encode("utf-8-sig"),
+            data=prepared_export,
             file_name="stability_constants.csv",
             mime="text/csv",
+            on_click="ignore",
         )
-        if total_rows > export_limit:
+        st.caption(
+            f"Prepared {st.session_state['_explorer_export_count']:,} records "
+            "from the current filters."
+        )
+        if st.session_state["_explorer_export_truncated"]:
             st.caption(
-                f"To keep the app responsive, this export is limited to the first "
-                f"{export_limit:,} records."
+                "To keep the app responsive, this export is limited to the first "
+                "50,000 records."
             )
 
     render_section_heading(
@@ -668,6 +731,7 @@ else:
         if search_query:
             matching_records = run_record_id_search(
                 database_path_text,
+                database_revision,
                 search_query,
                 selected_record_id,
             )

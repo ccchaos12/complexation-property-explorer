@@ -1,23 +1,27 @@
-/* Complexation Property Explorer design tokens: utilitarian, high-contrast, teal accent. */
+/* Complexation Property Explorer design tokens: calm, precise, platform-native. */
 :root {
-  --color-paper: oklch(97.5% 0.008 190);
-  --color-paper-2: oklch(94.5% 0.012 190);
-  --color-surface: oklch(99% 0.004 190);
-  --color-ink: oklch(20% 0.018 220);
-  --color-muted: oklch(45% 0.018 220);
-  --color-rule: oklch(82% 0.018 200);
-  --color-rule-strong: oklch(67% 0.025 200);
-  --color-accent: oklch(49% 0.115 184);
-  --color-accent-ink: oklch(97.5% 0.008 190);
-  --color-accent-dark: oklch(37% 0.09 184);
-  --color-accent-soft: oklch(92% 0.035 184);
-  --color-focus: oklch(58% 0.16 190);
+  --color-paper: oklch(97.8% 0.006 205);
+  --color-paper-2: oklch(95.2% 0.009 205);
+  --color-surface: oklch(99.5% 0.003 205);
+  --color-surface-raised: oklch(100% 0 0 / 0.82);
+  --color-surface-soft: oklch(98.4% 0.006 205 / 0.76);
+  --color-ink: oklch(22% 0.018 225);
+  --color-muted: oklch(47% 0.018 225);
+  --color-rule: oklch(86% 0.012 205);
+  --color-rule-strong: oklch(74% 0.018 205);
+  --color-highlight: oklch(100% 0 0 / 0.78);
+  --color-accent: oklch(50% 0.12 184);
+  --color-accent-ink: oklch(98% 0.006 190);
+  --color-accent-dark: oklch(38% 0.09 184);
+  --color-accent-soft: oklch(93.5% 0.032 184);
+  --color-focus: oklch(57% 0.15 190);
   --color-success: oklch(46% 0.105 155);
   --color-warning: oklch(64% 0.115 72);
   --color-danger: oklch(52% 0.17 25);
 
-  --font-display: "IBM Plex Mono", "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
-  --font-body: "IBM Plex Sans", Aptos, "Segoe UI", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
 
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
@@ -37,18 +41,25 @@
   --text-xl: 1.9531rem;
   --text-2xl: 2.4414rem;
 
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --dur-micro: 120ms;
-  --dur-short: 220ms;
-  --dur-long: 420ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.64, 0, 0.78, 0);
+  --ease-in-out: cubic-bezier(0.83, 0, 0.17, 1);
+  --dur-micro: 100ms;
+  --dur-short: 180ms;
+  --dur-long: 360ms;
 
   --rule-hairline: 1px solid var(--color-rule);
   --rule-strong: 1px solid var(--color-rule-strong);
-  --radius-xs: 0.125rem;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
+  --radius-xs: 0.5rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 999px;
+  --shadow-control: 0 1px 2px oklch(20% 0.02 220 / 0.08);
+  --shadow-raised: 0 1px 2px oklch(20% 0.02 220 / 0.06),
+    0 10px 28px oklch(20% 0.02 220 / 0.07);
+  --shadow-popover: 0 18px 50px oklch(20% 0.02 220 / 0.16);
+  --material-blur: blur(22px) saturate(165%);
   --size-popover-min: 13.5rem;
   --size-popover-max: 22rem;
 
