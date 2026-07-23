@@ -13,6 +13,10 @@ The app is intended for coordination-chemistry researchers who need to move quic
 from a broad search to an interpretable record, its experimental conditions, and its
 candidate literature references.
 
+## User manual
+
+[Open or download the User Manual for version 0.4.0](docs/User_Manual_v0.4.0.docx).
+
 ![Complexation Property Explorer search overview](docs/images/app-overview.jpg)
 
 ## What you can do
