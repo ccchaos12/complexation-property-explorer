@@ -33,4 +33,4 @@ toml==0.10.2
 tornado==6.5.7
 typing_extensions==4.16.0
 tzdata==2026.3
-urllib3==2.7.0
+urllib3==2.8.0
