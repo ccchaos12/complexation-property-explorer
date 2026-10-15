@@ -250,3 +250,45 @@ def record_comparison_rows(
             }
         )
     return rows
+
+
+def source_reference_status(value: object) -> str:
+    """Describe the legacy not_used flag without implying a verified citation."""
+    text = str(value).strip().lower() if value is not None else ""
+    if text in {"-1", "1", "-1.0", "1.0", "true"}:
+        return "Flagged as not used"
+    if text in {"0", "0.0", "false"}:
+        return "Not flagged as unused"
+    if text in {"", "n/a", "none", "nan"}:
+        return "Not reported"
+    return "Unrecognized source flag"
+
+
+def candidate_reference_rows(references: list[dict]) -> list[dict[str, str]]:
+    """Show one citation per source ID while retaining conflicting link metadata."""
+    grouped: dict[str, list[dict]] = {}
+    for reference in references:
+        grouped.setdefault(reference["reference_id"], []).append(reference)
+
+    rows = []
+    for reference_id, links in grouped.items():
+        statuses = {source_reference_status(link.get("not_used")) for link in links}
+        if {"Flagged as not used", "Not flagged as unused"} <= statuses:
+            status = "Conflicting source flags"
+        elif len(statuses) > 1:
+            status = "Mixed source flags — review metadata"
+        else:
+            status = next(iter(statuses))
+        comments = list(dict.fromkeys(
+            str(link["comment"]).strip()
+            for link in links
+            if link.get("comment") is not None and str(link["comment"]).strip()
+        ))
+        rows.append({
+            "Reference ID": reference_id,
+            "Code": display_value(links[0].get("reference_code")),
+            "Reference": display_value(links[0].get("reference_text")),
+            "Source use status": status,
+            "Comment": "\n".join(comments) if comments else "N/A",
+        })
+    return rows

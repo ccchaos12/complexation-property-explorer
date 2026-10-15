@@ -25,6 +25,12 @@ No unreleased changes.
   preserve exact citations and provenance granularity in filtered CSV exports.
 - Reject floating-point overflow instead of importing infinite numeric constants.
 
+- Replace raw citation-use flags with readable source-status labels; keep `0`
+  distinct from proof of use or verification, report conflicting/missing/unknown
+  flags, and group repeated links into one citation per source reference ID.
+- Preserve original reference flags in an explained, collapsed metadata table;
+  retain valid negative log K values unchanged.
+
 ### Security
 
 - Upgrade GitPython to 3.1.62, Tornado to 6.5.9 and urllib3 to 2.8.0,

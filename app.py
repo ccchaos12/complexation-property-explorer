@@ -24,6 +24,7 @@ from complexation_explorer import (
     search_record_ids,
 )
 from complexation_explorer.formatting import (
+    candidate_reference_rows,
     chemical_markup_to_unicode,
     data_note,
     display_record_id,
@@ -847,22 +848,34 @@ else:
         "matters."
     )
     if references:
-        reference_frame = pd.DataFrame(references).rename(
-            columns={
-                "reference_id": "Reference ID",
-                "reference_code": "Code",
-                "reference_text": "Reference",
-                "not_used": "Not used flag",
-                "comment": "Comment",
-            }
-        )
+        reference_frame = pd.DataFrame(candidate_reference_rows(references))
         st.dataframe(
-            reference_frame[
-                ["Reference ID", "Code", "Reference", "Not used flag", "Comment"]
-            ],
+            reference_frame,
             width="stretch",
             hide_index=True,
         )
+        st.caption(
+            "Source use status describes the source's unused-reference flag. "
+            "It is not a quality rating or confirmation that the citation supports "
+            "this exact constant. Conflicting flags are shown without choosing a side."
+        )
+        with st.expander("Source reference metadata"):
+            st.caption(
+                "Legacy not_used flag: −1 (or 1) is interpreted as true; 0 as false. "
+                "A true flag is displayed as 'Flagged as not used'; false means only "
+                "'Not flagged as unused'. Missing and unrecognized values are kept "
+                "separate. The original source records are unchanged."
+            )
+            raw_reference_frame = pd.DataFrame([
+                {
+                    "Reference ID": reference["reference_id"],
+                    "Raw not_used flag": display_value(reference.get("not_used")),
+                    "Comment": display_value(reference.get("comment")),
+                }
+                for reference in references
+            ])
+            st.dataframe(raw_reference_frame, width="stretch", hide_index=True)
+
     else:
         st.info("No linked references were found for this ligand-metal combination.")
 

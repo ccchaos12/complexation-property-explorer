@@ -97,3 +97,31 @@ Filtered CSV now includes exact-reference columns and calls the pair-level count
 `Candidate references`. Consumers depending on column names should update their
 mappings. The v0.4.0 Word manual remains a historical manual; this note documents
 the changed behavior.
+
+## Follow-up: misleading reference flags
+
+The candidate-reference table previously displayed raw `not_used_flag` integers.
+The immutable local build contains 36,699 links with `-1` and 43,460 with `0`.
+No reference code or citation text is a standalone `-1`; the misleading display
+comes from the flag column. Twenty-four ligand/metal/reference groups contain both
+flag values, so selecting one link's value would silently discard a conflict.
+
+The app now interprets the legacy Boolean convention for the field `not_used`:
+`-1` (and `1`) means the flag is set, displayed as **Flagged as not used**; `0`
+is **Not flagged as unused**, deliberately not "used", "verified" or "reliable".
+Missing and unrecognized flags have separate labels. This is a display
+interpretation of the source field, not a new review of the paper. The
+[NIST manual](https://www.nist.gov/system/files/documents/srd/46_8.htm) describes
+pair-level bibliographies and retention of references whose constants were not
+selected, but does not document this third-party SQL flag's numeric encoding.
+
+The default table has one citation per source reference ID and flags contradictory
+links as **Conflicting source flags**. Distinct comments are retained. Original
+flag values remain available in the collapsed **Source reference metadata** table,
+with the interpretation explained alongside them; the query API and SQLite are
+unchanged. No general replacement of negative numbers is performed.
+
+Six new regressions cover flags, conflicts, missing metadata, repeated links,
+separate source IDs and the live Streamlit table. A valid log K of `-1` remains
+`-1` in results and CSV, and the database remains byte-for-byte unchanged. The
+full follow-up suite passes **78 tests with no skips**.
