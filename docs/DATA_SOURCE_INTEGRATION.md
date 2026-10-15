@@ -136,7 +136,7 @@ builder are also implemented against an immutable, checksummed staging SQLite. T
 original workbook and both source-shaped staging databases remain unchanged.
 
 Cross-source chemical identity resolution and strict duplicate classification are
-implemented in canonical schema version 2. Exact-structure ligand matches and
+implemented in canonical schema version 3. Exact-structure ligand matches and
 strict constant duplicates are stored as explicit relationships. Both source
 records remain traceable; the application hides the duplicate side by default
 without deleting or overwriting it.

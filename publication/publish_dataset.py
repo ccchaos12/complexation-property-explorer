@@ -17,6 +17,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from complexation_explorer.io_utils import readonly_sqlite_uri, require_distinct_paths
+from complexation_explorer.schema import require_current_schema
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -213,7 +214,15 @@ PUBLISH_QUERY = """
       AND NOT EXISTS (
           SELECT 1
           FROM constant_record_relationships AS relationship
-          WHERE relationship.duplicate_record_id = c.record_id
+          JOIN constant_records AS preferred
+            ON preferred.record_id = relationship.preferred_record_id
+          JOIN source_references AS preferred_reference
+            ON preferred_reference.reference_id = preferred.verified_reference_id
+          WHERE preferred.is_active = 1
+            AND preferred.verification_status = 'verified'
+            AND preferred.numeric_value IS NOT NULL
+            AND preferred_reference.verification_status = 'verified'
+            AND relationship.duplicate_record_id = c.record_id
             AND relationship.relationship_type
               = 'strict_cross_source_duplicate'
       )
@@ -255,6 +264,7 @@ def publish_dataset(
     with closing(
         sqlite3.connect(readonly_sqlite_uri(database_path), uri=True)
     ) as connection:
+        require_current_schema(connection)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA query_only = ON")
         integrity = connection.execute("PRAGMA quick_check").fetchone()[0]
@@ -328,6 +338,7 @@ def publish_dataset(
                 "numeric_value_required": True,
                 "verified_reference_required": True,
                 "verified_reference_status_required": True,
+                "duplicate_excluded_only_if_preferred_is_publishable": True,
             },
             "data_terms": build_data_terms(source_rows),
             "published_at_utc": published_at,

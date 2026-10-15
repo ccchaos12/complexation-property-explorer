@@ -32,6 +32,7 @@ from complexation_explorer.formatting import (
     formula_to_unicode,
     record_comparison_rows,
 )
+from complexation_explorer.reference_panel import render_reference_panel
 from complexation_explorer.ui import (
     inject_design_css,
     render_fact_grid,
@@ -178,7 +179,11 @@ def result_frame(
             "reaction_type": "Reaction type",
             "display_value": "Value",
             "data_note": "Data note",
-            "candidate_reference_count": "Linked references",
+            "candidate_reference_count": "Candidate references",
+            "verified_reference_id": "Verified reference ID",
+            "verified_reference_code": "Verified reference code",
+            "verified_reference": "Verified reference",
+            "provenance_granularity": "Provenance granularity",
         }
     )
     compact_columns = [
@@ -211,7 +216,11 @@ def result_frame(
         "Error",
         "Footnote",
         "Data note",
-        "Linked references",
+        "Verified reference ID",
+        "Verified reference code",
+        "Verified reference",
+        "Provenance granularity",
+        "Candidate references",
     ]
     return frame[extended_columns if extended else compact_columns]
 
@@ -632,6 +641,7 @@ else:
             ("Equilibrium", equilibrium_to_unicode(detail["equilibrium_raw"])),
             ("Reported value", display_value(detail["reported_value_text"])),
             ("Parsed value", display_value(detail["numeric_value"])),
+            ("Uncertainty", display_value(detail["uncertainty_raw"])),
             ("Temperature", display_value(detail["temperature_raw"])),
             ("Ionic strength", display_value(detail["ionic_strength_raw"])),
             ("Solvent", chemical_markup_to_unicode(detail["solvent_raw"])),
@@ -642,8 +652,7 @@ else:
     record_relationships = get_record_relationships(
         detail["record_id"], database_path_text
     )
-    if record_relationships:
-        relationship = record_relationships[0]
+    for relationship in record_relationships:
         related_record_id = (
             relationship["preferred_record_id"]
             if relationship["record_role"] == "duplicate"
@@ -656,7 +665,7 @@ else:
         )
         st.info(
             f"{role_text} Exact cross-source match: `{related_record_id}`. "
-            "Both records remain verified and traceable."
+            "Both source records are retained for traceability."
         )
 
     ligand_matches = get_ligand_identity_matches(
@@ -814,38 +823,10 @@ else:
                 },
             )
 
-    render_section_heading(
-        "Linked references",
-        "Browse ligand-plus-metal literature links for the selected record.",
-    )
     references = get_candidate_references(
-        selected_row["ligand_id"], selected_row["metal_id"], database_path_text
+        detail["ligand_id"], detail["metal_species_id"], database_path_text
     )
-    st.warning(
-        "The source database links references at the ligand-plus-metal level, "
-        "not necessarily "
-        "to one exact Record ID. Consult the cited source when the experimental context "
-        "matters."
-    )
-    if references:
-        reference_frame = pd.DataFrame(references).rename(
-            columns={
-                "reference_id": "Reference ID",
-                "reference_code": "Code",
-                "reference_text": "Reference",
-                "not_used": "Not used flag",
-                "comment": "Comment",
-            }
-        )
-        st.dataframe(
-            reference_frame[
-                ["Reference ID", "Code", "Reference", "Not used flag", "Comment"]
-            ],
-            width="stretch",
-            hide_index=True,
-        )
-    else:
-        st.info("No linked references were found for this ligand-metal combination.")
+    render_reference_panel(detail, references)
 
 with st.expander("Data source and limitations"):
     st.markdown(

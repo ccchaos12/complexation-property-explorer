@@ -45,12 +45,12 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(summary["source_ids"], ["NIST_SRD46", "SUPPLEMENT"])
         self.assertEqual(summary["ligands"], 5_931)
         self.assertEqual(summary["constants"], 90_105)
-        self.assertEqual(summary["deduplicated_constants"], 90_090)
-        self.assertEqual(summary["strict_duplicate_records"], 15)
+        self.assertEqual(summary["deduplicated_constants"], 90_105)
+        self.assertEqual(summary["strict_duplicate_records"], 0)
         self.assertEqual(summary["exact_structure_ligand_links"], 50)
         self.assertEqual(summary["references_count"], 18_392)
         self.assertEqual(summary["log_k"], 60_771)
-        self.assertEqual(summary["deduplicated_log_k"], 60_756)
+        self.assertEqual(summary["deduplicated_log_k"], 60_771)
 
     def test_all_metals_are_available(self):
         metals = list_metals()
@@ -74,7 +74,7 @@ class DatabaseTests(unittest.TestCase):
 
     def test_empty_metal_filter_searches_all_metals(self):
         filters = SearchFilters(value_type="K")
-        self.assertEqual(count_constants(filters), 60_756)
+        self.assertEqual(count_constants(filters), 60_771)
         self.assertEqual(
             count_constants(
                 SearchFilters(value_type="K", include_strict_duplicates=True)
@@ -84,12 +84,7 @@ class DatabaseTests(unittest.TestCase):
 
     def test_duplicate_and_ligand_identity_relationships_are_queryable(self):
         relationships = get_record_relationships("SUPPLEMENT:CONSTANT:188")
-        self.assertEqual(len(relationships), 1)
-        self.assertEqual(relationships[0]["record_role"], "duplicate")
-        self.assertEqual(
-            relationships[0]["preferred_record_id"],
-            "NIST_SRD46:CONSTANT:102025",
-        )
+        self.assertEqual(relationships, [])
 
         ligand_matches = get_ligand_identity_matches("SUPPLEMENT:LIGAND:178")
         self.assertEqual(len(ligand_matches), 1)

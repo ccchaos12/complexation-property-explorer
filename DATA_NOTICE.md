@@ -30,7 +30,7 @@ the repository's software license.
 
 ## Modification notice for this project
 
-Modified by ccchaos12 (Kexin Chen), July 15–20, 2026.
+Modified by ccchaos12 (Kexin Chen), July 15–20 and October 15, 2026.
 
 The project:
 
@@ -54,6 +54,11 @@ The project:
 The unified local release applies the project owner's declared all-verified
 application policy. That status does not constitute a new independent academic
 verification or correction of the underlying NIST values.
+
+The October 15 update rebuilds schema 3, excludes absent structures from identity
+matches, compares solvent and electrolyte metadata before hiding duplicates, and
+restores the 15 previously hidden pairs whose medium metadata does not match.
+Reported source values and immutable staging inputs are unchanged.
 
 ## Data-quality disclaimer
 

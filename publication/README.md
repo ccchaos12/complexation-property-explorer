@@ -8,7 +8,10 @@ and never reads the local Excel database.
 
 Every exported record must be active, verified, numeric, and linked to an exact
 reference whose status is also verified. Candidate, reviewed, rejected, and
-superseded records are excluded. Publication fails when no eligible records exist.
+superseded records are excluded. Publication fails when no eligible records exist. A duplicate is excluded only if
+its preferred record independently meets all of these publication requirements.
+An app-visible preferred record without an exact verified reference cannot suppress
+an otherwise publishable Supplement record. Schema 3 is required.
 
 ## Publish a dataset
 

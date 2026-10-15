@@ -44,25 +44,38 @@ The included build reports describe the current local unified build:
 | Data sources | 2 |
 | Ligands | 5,931 |
 | Source constant and thermodynamic records retained | 90,105 |
-| Distinct constant records shown by default | 90,090 |
+| Distinct constant records shown by default | 90,105 |
 | Source log K records retained | 60,771 |
-| Distinct log K records shown by default | 60,756 |
+| Distinct log K records shown by default | 60,771 |
 | Exact-structure ligand identity links | 50 |
-| Strict cross-source duplicate constant links | 15 |
+| Strict cross-source duplicate constant links | 0 |
 | Reference records | 18,392 |
 
 The NIST contribution remains 5,750 ligands, 89,824 constants, and 60,540
 log K records. The optional local supplement contributes 181 source-scoped ligands,
 281 constants, and 231 log K records.
 
-The 15 strict cross-source duplicate constants remain stored and verified for
-provenance. Default searches hide the Supplement side of each pair; a sidebar
-control can include all retained source records.
+The 15 pairs hidden by v0.4.0 do not have matching solvent/electrolyte metadata.
+v0.4.1 retains all 90,105 records in the default results; these pairs are not proven
+strict duplicates. Future exact matches can be hidden only while their preferred
+record is active. The sidebar can include all retained source records.
 
 The NIST SQL package is a third-party extraction from the discontinued Windows
 database. NIST does not warrant that extraction and notes known structure-data
 errors. See [Data terms and citation](#data-terms-and-citation) before distributing
 derived data.
+
+## Upgrading to v0.4.1
+
+Canonical schema 3 corrects duplicate visibility and requires a rebuild from the
+unchanged staging sources. Run your usual platform launcher: it preserves an old
+default database as an `*.invalid-<timestamp>.db` file and rebuilds the generated
+application database automatically. Schema 2 files are not silently reused.
+
+For a custom `COMPLEXATION_DB_PATH`, rebuild its canonical base with the current
+builder and reapply saved review decisions to a separate curated output. Custom
+databases are never automatically replaced. See [the audit and migration notes](docs/DEBUG_AUDIT_20261015.md).
+The linked v0.4.0 Word manual predates these corrections.
 
 ## Requirements
 

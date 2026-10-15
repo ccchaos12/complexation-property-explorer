@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .io_utils import readonly_sqlite_uri
+from .schema import SCHEMA_VERSION, require_current_schema
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DB_PATH = (
@@ -18,7 +19,7 @@ DEFAULT_DB_PATH = (
 )
 VALUE_TYPES = {"K", "H", "S", "*"}
 MAX_QUERY_LIMIT = 50_000
-CANONICAL_SCHEMA_VERSION = "2"
+CANONICAL_SCHEMA_VERSION = str(SCHEMA_VERSION)
 REACTION_TYPE_LABELS = {
     "complex_1_1": "1:1 complex · M + L ⇌ ML",
     "complex_1_2": "1:2 complex · M + 2 L ⇌ ML₂",
@@ -77,6 +78,11 @@ def connect_readonly(path: str | Path | None = None) -> sqlite3.Connection:
         uri=True,
         timeout=10,
     )
+    try:
+        require_current_schema(connection)
+    except Exception:
+        connection.close()
+        raise
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA query_only = ON")
     connection.execute("PRAGMA foreign_keys = ON")
@@ -159,6 +165,8 @@ def _build_where(filters: SearchFilters) -> tuple[str, list]:
             NOT EXISTS (
                 SELECT 1
                 FROM constant_record_relationships AS relationship
+                JOIN active_constant_records AS preferred
+                  ON preferred.record_id = relationship.preferred_record_id
                 WHERE relationship.duplicate_record_id = v.record_id
                   AND relationship.relationship_type
                     = 'strict_cross_source_duplicate'
@@ -275,6 +283,10 @@ def search_constants(
                v.uncertainty_raw AS error,
                v.footnote_raw AS footnote,
                v.quality_flags_json,
+               v.verified_reference_id,
+               exact_reference.reference_code AS verified_reference_code,
+               exact_reference.citation_raw AS verified_reference,
+               v.provenance_granularity,
                {REACTION_CLASS_SQL} AS reaction_type,
                (
                  SELECT COUNT(DISTINCT link.reference_id)
@@ -284,6 +296,8 @@ def search_constants(
                    AND link.resolution_status = 'resolved'
                ) AS candidate_reference_count
         {BASE_FROM}
+        LEFT JOIN source_references AS exact_reference
+          ON exact_reference.reference_id = v.verified_reference_id
         WHERE {where_sql}
         ORDER BY LOWER(m.source_code), LOWER(l.ligand_name_raw),
                  v.numeric_value, v.record_id
@@ -359,8 +373,12 @@ def get_record_detail(
                    l.ligand_name_raw AS ligand, l.formula_raw AS formula,
                    l.ligand_class_raw AS ligand_class,
                    s.source_id, s.source_name,
-                   sv.version_label AS source_version
+                   sv.version_label AS source_version,
+                   exact_reference.reference_code AS verified_reference_code,
+                   exact_reference.citation_raw AS verified_reference
             {BASE_FROM}
+            LEFT JOIN source_references AS exact_reference
+              ON exact_reference.reference_id = v.verified_reference_id
             WHERE v.record_id = ?
             """,
             (record_id,),
@@ -463,8 +481,11 @@ def get_database_summary(path: str | Path | None = None) -> dict:
                      SELECT COUNT(*) FROM deduplicated_active_constant_records
                    ) AS deduplicated_constants,
                    (
-                     SELECT COUNT(*) FROM constant_record_relationships
-                     WHERE relationship_type = 'strict_cross_source_duplicate'
+                     SELECT COUNT(*) FROM active_constant_records AS active
+                     WHERE NOT EXISTS (
+                         SELECT 1 FROM deduplicated_active_constant_records AS visible
+                         WHERE visible.record_id = active.record_id
+                     )
                    ) AS strict_duplicate_records,
                    (
                      SELECT COUNT(*) FROM ligand_identity_relationships

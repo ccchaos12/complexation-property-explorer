@@ -1,5 +1,5 @@
 PRAGMA foreign_keys = ON;
-PRAGMA user_version = 2;
+PRAGMA user_version = 3;
 
 CREATE TABLE sources (
     source_id TEXT PRIMARY KEY,
@@ -207,6 +207,8 @@ FROM active_constant_records AS active
 WHERE NOT EXISTS (
     SELECT 1
     FROM constant_record_relationships AS relationship
+    JOIN active_constant_records AS preferred
+      ON preferred.record_id = relationship.preferred_record_id
     WHERE relationship.duplicate_record_id = active.record_id
       AND relationship.relationship_type = 'strict_cross_source_duplicate'
 );

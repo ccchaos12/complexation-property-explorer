@@ -15,6 +15,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from complexation_explorer.io_utils import readonly_sqlite_uri  # noqa: E402
+from complexation_explorer.schema import require_current_schema  # noqa: E402
 from ingestion.build_canonical import build as build_canonical  # noqa: E402
 from ingestion.build_unified import build as build_unified  # noqa: E402
 from scripts.build_srd46_sqlite import build_database  # noqa: E402
@@ -171,11 +172,7 @@ def validate_canonical_database(
             connection.execute("PRAGMA foreign_keys = ON")
             if connection.execute("PRAGMA foreign_key_check").fetchone():
                 raise ValueError("Canonical database failed foreign-key validation")
-            schema_version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if schema_version != 2:
-                raise ValueError(
-                    f"Unsupported canonical schema version: {schema_version}; expected 2"
-                )
+            require_current_schema(connection)
             if connection.execute("SELECT COUNT(*) FROM source_versions").fetchone()[0] == 0:
                 raise ValueError("Canonical database has no source version metadata")
             connection.execute(
@@ -232,7 +229,7 @@ def validate_canonical_database(
                     )
                 duplicate_relationships = connection.execute(
                     """
-                    SELECT COUNT(*) FROM constant_record_relationships
+                    SELECT COUNT(DISTINCT duplicate_record_id) FROM constant_record_relationships
                     WHERE relationship_type = 'strict_cross_source_duplicate'
                     """
                 ).fetchone()[0]

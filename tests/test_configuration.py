@@ -44,6 +44,9 @@ class ConfigurationTests(unittest.TestCase):
         runtime = (PROJECT_ROOT / "requirements.txt").read_text(encoding="utf-8")
         pyproject = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
+        self.assertIn("GitPython==3.1.62", requirements)
+        self.assertIn("tornado==6.5.9", requirements)
+        self.assertIn("urllib3==2.8.0", requirements)
         self.assertIn("pyarrow==23.0.1", requirements)
         self.assertIn("streamlit==1.54.0", requirements)
         self.assertIn("streamlit==1.54.0", runtime)

@@ -48,13 +48,13 @@ class CanonicalDatabaseTests(unittest.TestCase):
                 connection.execute(
                     "SELECT COUNT(*) FROM constant_record_relationships"
                 ).fetchone()[0],
-                15,
+                0,
             )
             self.assertEqual(
                 connection.execute(
                     "SELECT COUNT(*) FROM deduplicated_active_constant_records"
                 ).fetchone()[0],
-                90_090,
+                90_105,
             )
 
     def test_project_owner_all_verified_policy_is_applied(self):
@@ -108,12 +108,12 @@ class CanonicalDatabaseTests(unittest.TestCase):
             manifest = json.loads(release["manifest_json"])
             self.assertEqual(release["release_status"], "reviewed")
             self.assertEqual(release["record_count"], 90_105)
-            self.assertEqual(manifest["deduplicated_record_count"], 90_090)
+            self.assertEqual(manifest["deduplicated_record_count"], 90_105)
             self.assertEqual(
                 manifest["exact_structure_ligand_relationships"], 50
             )
             self.assertEqual(
-                manifest["strict_cross_source_duplicate_relationships"], 15
+                manifest["strict_cross_source_duplicate_relationships"], 0
             )
             self.assertEqual(
                 manifest["verification_basis"],

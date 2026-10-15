@@ -9,6 +9,46 @@ project intends to use [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 No unreleased changes.
 
+## [0.4.1] - 2026-10-15
+
+### Fixed
+
+- Compare solvent and electrolyte metadata when classifying strict duplicates;
+  restore 15 previously hidden Supplement records in the full local dataset.
+- Reject empty, null and placeholder molecular structure arrays as identity evidence.
+- Count distinct hidden records separately from duplicate relationships, allowing
+  one Supplement record to match multiple NIST records without failing a build.
+- Keep active duplicates visible when their preferred records are rejected or
+  superseded; only suppress publication records when a preferred record also
+  satisfies all publication requirements.
+- Display exact record-level references separately from pair-level candidates and
+  preserve exact citations and provenance granularity in filtered CSV exports.
+- Reject floating-point overflow instead of importing infinite numeric constants.
+
+- Replace raw citation-use flags with readable source-status labels; keep `0`
+  distinct from proof of use or verification, report conflicting/missing/unknown
+  flags, and group repeated links into one citation per source reference ID.
+- Preserve original reference flags in an explained, collapsed metadata table;
+  retain valid negative log K values unchanged.
+
+### Security
+
+- Upgrade GitPython to 3.1.62, Tornado to 6.5.9 and urllib3 to 2.8.0,
+  covering the patched versions identified by the repository's open Dependabot alerts.
+
+### Changed
+
+- Replace reference tables with searchable citation cards, separating direct record
+  links from related literature. Keep source identifiers and original flags in
+  per-citation details; show exceptional source statuses beside the citation.
+- Add individual/all-match citation copying and bibliography CSV export with
+  provenance. Load related citations ten at a time while copying/exporting all
+  matches; offer source links only for explicit URLs or DOIs in the citation.
+- Use canonical schema 3 so launchers preserve and rebuild old generated databases.
+  Custom curated databases require rebuilding their base and replaying saved reviews.
+- Add portable regression coverage for identity, deduplication, publication,
+  provenance and schema compatibility. See `docs/DEBUG_AUDIT_20261015.md`.
+
 ## [0.4.0] - 2026-07-20
 
 ### Added
