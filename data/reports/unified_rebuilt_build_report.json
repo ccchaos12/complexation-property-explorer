@@ -1,6 +1,6 @@
 {
   "builder": "unified_canonical",
-  "schema_version": "2.0.0",
+  "schema_version": "3.0.0",
   "verification_basis": "project_owner_declared_all_verified",
   "inputs": {
     "nist": {
@@ -15,8 +15,8 @@
   "adapters": {
     "nist": {
       "adapter": "NistSrd46Adapter",
-      "adapter_version": "1.0.0",
-      "schema_version": "2.0.0",
+      "adapter_version": "1.0.1",
+      "schema_version": "3.0.0",
       "source_id": "NIST_SRD46",
       "source_version_id": "NIST_SRD46:141269bb8c6d9e82",
       "source_checksum_sha256": "141269bb8c6d9e8271a5b4bff35f7c9fa913938bb50a62c096847de67e382d18",
@@ -43,7 +43,7 @@
     },
     "supplement": {
       "adapter": "LocalExcelSupplementAdapter",
-      "adapter_version": "1.0.0",
+      "adapter_version": "1.0.1",
       "source_id": "SUPPLEMENT",
       "source_version_id": "SUPPLEMENT:627618638905efe6",
       "source_checksum_sha256": "627618638905efe65f1cb327179ffa58992eccafc079b1eabd523e1257a4dbb6",
@@ -63,14 +63,14 @@
   },
   "output": {
     "path": "data/generated/Complexation_Constants_Unified_rebuilt.db",
-    "sha256": "c34c021583c0b11ec0295d11f79dd83e6c8f03df6d629ec9aeabe78da71b9a5a",
-    "size_bytes": 94904320
+    "sha256": "002a2375006dc674785b4ca13e8d44f4255c4e979ad12a4e209dc0f9f46eb94f",
+    "size_bytes": 94896128
   },
   "validation": {
     "sqlite_integrity": "ok",
     "foreign_key_errors": 0,
     "active_records": 90105,
-    "deduplicated_active_records": 90090,
+    "deduplicated_active_records": 90105,
     "verified_records": 90105,
     "supplement_exact_reference_records": 281,
     "review_events": 0,
@@ -79,9 +79,9 @@
   "duplicate_screening": {
     "supplement_ligands_with_exact_nist_structure": 50,
     "supplement_ligands_sharing_formula_with_nist": 99,
-    "strict_cross_source_duplicate_constants": 15,
+    "strict_cross_source_duplicate_constants": 0,
     "ligand_identity_relationships": 50,
-    "constant_duplicate_relationships": 15,
+    "constant_duplicate_relationships": 0,
     "action": "classified_and_retained; duplicate side hidden from default search"
   }
 }

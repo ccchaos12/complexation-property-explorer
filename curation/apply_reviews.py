@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from complexation_explorer.io_utils import readonly_sqlite_uri, require_distinct_paths
+from complexation_explorer.schema import SCHEMA_VERSION_LABEL, require_current_schema
 
 REQUIRED_COLUMNS = (
     "review_id",
@@ -140,6 +141,7 @@ def apply_reviews(
             sqlite3.connect(readonly_sqlite_uri(canonical_path), uri=True)
         ) as source, closing(sqlite3.connect(temporary_path)) as target:
             source.execute("PRAGMA query_only = ON")
+            require_current_schema(source)
             source.backup(target)
             target.row_factory = sqlite3.Row
             target.execute("PRAGMA foreign_keys = ON")
@@ -293,12 +295,13 @@ def apply_reviews(
                 INSERT INTO dataset_releases (
                     release_id, release_name, release_status, intended_use,
                     schema_version, created_at_utc, record_count, manifest_json
-                ) VALUES (?, ?, 'reviewed', ?, '2.0.0', ?, ?, ?)
+                ) VALUES (?, ?, 'reviewed', ?, ?, ?, ?, ?)
                 """,
                 (
                     release_id,
                     "Reviewed canonical stability-constant release",
                     "reviewed_records_not_automatically_approved_for_training",
+                    SCHEMA_VERSION_LABEL,
                     applied_at,
                     reviewed_records,
                     json.dumps(manifest, sort_keys=True, separators=(",", ":")),

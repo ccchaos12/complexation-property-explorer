@@ -11,6 +11,6 @@ counts, quality-flag counts, release status, integrity results, and confirmation
 no local Excel source was accessed.
 
 `unified_rebuilt_build_report.json` records the reproducible NIST-plus-Supplement
-schema-v2 build, both immutable source checksums, all-verified policy, exact
+schema-v3 build, both immutable source checksums, all-verified policy, exact
 reference coverage, duplicate relationship counts, deduplicated-view counts, and
 SQLite integrity results for the application database.

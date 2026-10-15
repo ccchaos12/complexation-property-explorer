@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import sqlite3
 from contextlib import closing
@@ -11,11 +12,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from complexation_explorer.io_utils import readonly_sqlite_uri
+from complexation_explorer.schema import SCHEMA_VERSION_LABEL
 
 from .base import SourceAdapter
 
-ADAPTER_VERSION = "1.0.0"
-SCHEMA_VERSION = "2.0.0"
+ADAPTER_VERSION = "1.0.1"
+SCHEMA_VERSION = SCHEMA_VERSION_LABEL
 STRICT_NUMBER = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?")
 BATCH_SIZE = 5_000
 
@@ -34,7 +36,8 @@ def strict_float(value: str | None) -> float | None:
     stripped = value.strip()
     if not STRICT_NUMBER.fullmatch(stripped):
         return None
-    return float(stripped)
+    parsed = float(stripped)
+    return parsed if math.isfinite(parsed) else None
 
 
 def canonical_id(prefix: str, source_record_id: int | str) -> str:

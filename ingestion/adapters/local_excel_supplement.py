@@ -13,7 +13,7 @@ from complexation_explorer.io_utils import readonly_sqlite_uri
 from .base import SourceAdapter
 from .nist_srd46 import sha256_file, strict_float
 
-ADAPTER_VERSION = "1.0.0"
+ADAPTER_VERSION = "1.0.1"
 SOURCE_ID = "SUPPLEMENT"
 BATCH_SIZE = 1_000
 

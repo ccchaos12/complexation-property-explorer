@@ -70,7 +70,7 @@ python -m ingestion.build_canonical \
 ```
 
 When the verified Supplement staging database is present, build the default
-schema-v2 application database with:
+schema-v3 application database with:
 
 ```bash
 python -m ingestion.build_unified \

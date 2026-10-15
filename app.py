@@ -178,7 +178,11 @@ def result_frame(
             "reaction_type": "Reaction type",
             "display_value": "Value",
             "data_note": "Data note",
-            "candidate_reference_count": "Linked references",
+            "candidate_reference_count": "Candidate references",
+            "verified_reference_id": "Verified reference ID",
+            "verified_reference_code": "Verified reference code",
+            "verified_reference": "Verified reference",
+            "provenance_granularity": "Provenance granularity",
         }
     )
     compact_columns = [
@@ -211,7 +215,11 @@ def result_frame(
         "Error",
         "Footnote",
         "Data note",
-        "Linked references",
+        "Verified reference ID",
+        "Verified reference code",
+        "Verified reference",
+        "Provenance granularity",
+        "Candidate references",
     ]
     return frame[extended_columns if extended else compact_columns]
 
@@ -632,6 +640,7 @@ else:
             ("Equilibrium", equilibrium_to_unicode(detail["equilibrium_raw"])),
             ("Reported value", display_value(detail["reported_value_text"])),
             ("Parsed value", display_value(detail["numeric_value"])),
+            ("Uncertainty", display_value(detail["uncertainty_raw"])),
             ("Temperature", display_value(detail["temperature_raw"])),
             ("Ionic strength", display_value(detail["ionic_strength_raw"])),
             ("Solvent", chemical_markup_to_unicode(detail["solvent_raw"])),
@@ -642,8 +651,7 @@ else:
     record_relationships = get_record_relationships(
         detail["record_id"], database_path_text
     )
-    if record_relationships:
-        relationship = record_relationships[0]
+    for relationship in record_relationships:
         related_record_id = (
             relationship["preferred_record_id"]
             if relationship["record_role"] == "duplicate"
@@ -656,7 +664,7 @@ else:
         )
         st.info(
             f"{role_text} Exact cross-source match: `{related_record_id}`. "
-            "Both records remain verified and traceable."
+            "Both source records are retained for traceability."
         )
 
     ligand_matches = get_ligand_identity_matches(
@@ -814,15 +822,26 @@ else:
                 },
             )
 
+    if detail["verified_reference_id"]:
+        render_section_heading(
+            "Verified record reference",
+            "This citation is linked to this exact Record ID.",
+        )
+        st.caption(
+            f"{detail['verified_reference_id']} · "
+            f"{display_value(detail['verified_reference_code'])}"
+        )
+        st.write(detail["verified_reference"])
+
     render_section_heading(
-        "Linked references",
-        "Browse ligand-plus-metal literature links for the selected record.",
+        "Candidate references",
+        "Additional ligand-plus-metal links are not exact record-level citations.",
     )
     references = get_candidate_references(
         selected_row["ligand_id"], selected_row["metal_id"], database_path_text
     )
     st.warning(
-        "The source database links references at the ligand-plus-metal level, "
+        "These candidate references are linked at the ligand-plus-metal level, "
         "not necessarily "
         "to one exact Record ID. Consult the cited source when the experimental context "
         "matters."

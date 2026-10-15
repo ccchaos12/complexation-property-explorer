@@ -14,12 +14,27 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from complexation_explorer.io_utils import require_distinct_paths
+from complexation_explorer.schema import SCHEMA_VERSION_LABEL
 from ingestion.adapters.local_excel_supplement import LocalExcelSupplementAdapter
 from ingestion.adapters.nist_srd46 import NistSrd46Adapter, sha256_file
 from ingestion.build_canonical import DEFAULT_SCHEMA, portable_report_path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCHEMA_VERSION = "2.0.0"
+SCHEMA_VERSION = SCHEMA_VERSION_LABEL
+
+
+def has_usable_structure(raw: str | None) -> bool:
+    """An empty or placeholder mol-data array cannot establish chemical identity."""
+    try:
+        structures = json.loads(raw) if raw else None
+    except (TypeError, ValueError):
+        return False
+    return isinstance(structures, list) and bool(structures) and all(
+        isinstance(value, str)
+        and value.strip().lower() not in {"", "n/a", "na", "null", "none", "unknown"}
+        and set(value.strip()) != {"*"}
+        for value in structures
+    )
 
 
 def build(
@@ -68,6 +83,7 @@ def build(
         built_at = datetime.now(UTC).isoformat()
         with closing(sqlite3.connect(temporary_path)) as connection, connection:
             connection.row_factory = sqlite3.Row
+            connection.create_function("has_usable_structure", 1, has_usable_structure)
             connection.execute("PRAGMA foreign_keys = ON")
 
             connection.execute(
@@ -97,8 +113,7 @@ def build(
                   ON nist_version.source_version_id = nist_ligand.source_version_id
                 WHERE local_version.source_id = 'SUPPLEMENT'
                   AND nist_version.source_id = 'NIST_SRD46'
-                  AND local_ligand.structure_raw IS NOT NULL
-                  AND local_ligand.structure_raw NOT LIKE '%"N/A"%'
+                  AND has_usable_structure(local_ligand.structure_raw)
                 ORDER BY CAST(local_ligand.source_record_id AS INTEGER),
                          CAST(nist_ligand.source_record_id AS INTEGER)
                 """
@@ -159,10 +174,11 @@ def build(
                    = COALESCE(local_constant.temperature_raw, '')
                  AND COALESCE(nist_constant.ionic_strength_raw, '')
                    = COALESCE(local_constant.ionic_strength_raw, '')
+                 AND nist_constant.solvent_raw IS local_constant.solvent_raw
+                 AND nist_constant.electrolyte_raw IS local_constant.electrolyte_raw
                 WHERE local_version.source_id = 'SUPPLEMENT'
                   AND nist_version.source_id = 'NIST_SRD46'
-                  AND local_ligand.structure_raw IS NOT NULL
-                  AND local_ligand.structure_raw NOT LIKE '%"N/A"%'
+                  AND has_usable_structure(local_ligand.structure_raw)
                 ORDER BY CAST(local_constant.source_record_id AS INTEGER),
                          CAST(nist_constant.source_record_id AS INTEGER)
                 """
@@ -175,6 +191,8 @@ def build(
                 "reported_value_text",
                 "temperature_raw",
                 "ionic_strength_raw",
+                "solvent_raw",
+                "electrolyte_raw",
             ]
             for row in duplicate_constant_rows:
                 evidence = {
@@ -301,7 +319,7 @@ def build(
                 """
             ).fetchone()[0]
             strict_cross_source_duplicate_constants = len(
-                duplicate_constant_rows
+                {row["duplicate_record_id"] for row in duplicate_constant_rows}
             )
             if integrity != "ok":
                 raise ValueError(
@@ -322,9 +340,7 @@ def build(
                     "Supplement exact-reference validation failed: "
                     f"{exact_reference_count} linked records"
                 )
-            if record_count - deduplicated_record_count != len(
-                duplicate_constant_rows
-            ):
+            if record_count - deduplicated_record_count != strict_cross_source_duplicate_constants:
                 raise ValueError(
                     "Duplicate relationship validation failed: "
                     f"{record_count - deduplicated_record_count} hidden records "
