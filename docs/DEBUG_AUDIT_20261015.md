@@ -25,6 +25,23 @@ missing. Matching value, temperature and ionic strength cannot establish an exac
 medium match. The correction retains both rows without asserting they represent
 different experiments or claiming the underlying measurements are incorrect.
 
+## Dependency security fixes
+
+GitHub reports open alerts for the runtime's locked GitPython, Tornado and urllib3
+versions, including a critical GitPython configuration-injection advisory. Updated
+only these three dependency pins: GitPython 3.1.52 → 3.1.62, Tornado 6.5.7 → 6.5.9,
+and urllib3 2.7.0 → 2.8.0. These reach the patched versions reported in the open
+alerts and match the corresponding Dependabot patch proposals.
+
+Examples of upstream advisories:
+[GitPython](https://github.com/gitpython-developers/GitPython/security/advisories/GHSA-284h-m62q-gf8w),
+[Tornado](https://github.com/tornadoweb/tornado/security/advisories/GHSA-c2m8-h5v5-343r),
+[urllib3](https://github.com/urllib3/urllib3/security/advisories/GHSA-vxq7-64xx-v4gw).
+Installed the complete updated lockfile in an isolated environment; `pip check`
+passes and the full 72-test suite passes there as well. This does not assert that
+all application paths are exploitable or that every possible vulnerability has
+been excluded. Alerts against the default branch can remain open until merge.
+
 ## Full-data validation
 
 Rebuilt both the NIST-only and unified databases from the existing immutable

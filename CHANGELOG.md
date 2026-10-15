@@ -25,6 +25,11 @@ No unreleased changes.
   preserve exact citations and provenance granularity in filtered CSV exports.
 - Reject floating-point overflow instead of importing infinite numeric constants.
 
+### Security
+
+- Upgrade GitPython to 3.1.62, Tornado to 6.5.9 and urllib3 to 2.8.0,
+  covering the patched versions identified by the repository's open Dependabot alerts.
+
 ### Changed
 
 - Use canonical schema 3 so launchers preserve and rebuild old generated databases.
