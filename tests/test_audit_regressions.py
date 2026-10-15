@@ -246,7 +246,9 @@ class ScientificIntegrityTests(unittest.TestCase):
             app.checkbox(key="explorer_include_strict_duplicates").check().run()
             app.text_input(key="explorer_ligand_text").set_value("Glycine").run()
             self.assertEqual(list(app.exception), [])
-            self.assertTrue(any("Verified record reference" in item.value for item in app.markdown))
+            self.assertTrue(
+                any("Directly linked to this record" in item.value for item in app.markdown)
+            )
             self.assertTrue(any("Fixture reference" in item.value for item in app.markdown))
             next(
                 button for button in app.button if button.label == "Prepare filtered CSV"

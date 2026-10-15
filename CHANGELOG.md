@@ -38,6 +38,12 @@ No unreleased changes.
 
 ### Changed
 
+- Replace reference tables with searchable citation cards, separating direct record
+  links from related literature. Keep source identifiers and original flags in
+  per-citation details; show exceptional source statuses beside the citation.
+- Add individual/all-match citation copying and bibliography CSV export with
+  provenance. Load related citations ten at a time while copying/exporting all
+  matches; offer source links only for explicit URLs or DOIs in the citation.
 - Use canonical schema 3 so launchers preserve and rebuild old generated databases.
   Custom curated databases require rebuilding their base and replaying saved reviews.
 - Add portable regression coverage for identity, deduplication, publication,

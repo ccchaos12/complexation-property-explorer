@@ -24,7 +24,6 @@ from complexation_explorer import (
     search_record_ids,
 )
 from complexation_explorer.formatting import (
-    candidate_reference_rows,
     chemical_markup_to_unicode,
     data_note,
     display_record_id,
@@ -33,6 +32,7 @@ from complexation_explorer.formatting import (
     formula_to_unicode,
     record_comparison_rows,
 )
+from complexation_explorer.reference_panel import render_reference_panel
 from complexation_explorer.ui import (
     inject_design_css,
     render_fact_grid,
@@ -823,61 +823,10 @@ else:
                 },
             )
 
-    if detail["verified_reference_id"]:
-        render_section_heading(
-            "Verified record reference",
-            "This citation is linked to this exact Record ID.",
-        )
-        st.caption(
-            f"{detail['verified_reference_id']} · "
-            f"{display_value(detail['verified_reference_code'])}"
-        )
-        st.write(detail["verified_reference"])
-
-    render_section_heading(
-        "Candidate references",
-        "Additional ligand-plus-metal links are not exact record-level citations.",
-    )
     references = get_candidate_references(
-        selected_row["ligand_id"], selected_row["metal_id"], database_path_text
+        detail["ligand_id"], detail["metal_species_id"], database_path_text
     )
-    st.warning(
-        "These candidate references are linked at the ligand-plus-metal level, "
-        "not necessarily "
-        "to one exact Record ID. Consult the cited source when the experimental context "
-        "matters."
-    )
-    if references:
-        reference_frame = pd.DataFrame(candidate_reference_rows(references))
-        st.dataframe(
-            reference_frame,
-            width="stretch",
-            hide_index=True,
-        )
-        st.caption(
-            "Source use status describes the source's unused-reference flag. "
-            "It is not a quality rating or confirmation that the citation supports "
-            "this exact constant. Conflicting flags are shown without choosing a side."
-        )
-        with st.expander("Source reference metadata"):
-            st.caption(
-                "Legacy not_used flag: −1 (or 1) is interpreted as true; 0 as false. "
-                "A true flag is displayed as 'Flagged as not used'; false means only "
-                "'Not flagged as unused'. Missing and unrecognized values are kept "
-                "separate. The original source records are unchanged."
-            )
-            raw_reference_frame = pd.DataFrame([
-                {
-                    "Reference ID": reference["reference_id"],
-                    "Raw not_used flag": display_value(reference.get("not_used")),
-                    "Comment": display_value(reference.get("comment")),
-                }
-                for reference in references
-            ])
-            st.dataframe(raw_reference_frame, width="stretch", hide_index=True)
-
-    else:
-        st.info("No linked references were found for this ligand-metal combination.")
+    render_reference_panel(detail, references)
 
 with st.expander("Data source and limitations"):
     st.markdown(

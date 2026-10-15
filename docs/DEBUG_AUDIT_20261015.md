@@ -115,9 +115,9 @@ interpretation of the source field, not a new review of the paper. The
 pair-level bibliographies and retention of references whose constants were not
 selected, but does not document this third-party SQL flag's numeric encoding.
 
-The default table has one citation per source reference ID and flags contradictory
+The default presentation has one citation per source reference ID and flags contradictory
 links as **Conflicting source flags**. Distinct comments are retained. Original
-flag values remain available in the collapsed **Source reference metadata** table,
+flag values remain available in each collapsed **Reference details** panel,
 with the interpretation explained alongside them; the query API and SQLite are
 unchanged. No general replacement of negative numbers is performed.
 
@@ -125,3 +125,42 @@ Six new regressions cover flags, conflicts, missing metadata, repeated links,
 separate source IDs and the live Streamlit table. A valid log K of `-1` remains
 `-1` in results and CSV, and the database remains byte-for-byte unchanged. The
 full follow-up suite passes **78 tests with no skips**.
+
+## Readable bibliography panel
+
+The reference area now separates **Directly linked to this record** citations
+from **Related to this ligand–metal system** literature. Direct links describe
+the stored record association, not an independent revalidation of the paper.
+When the same reference appears in both kinds of links, it appears once in the
+direct section and retains its pair-level comments and conflicting flags.
+
+Cards show full citations and exceptional source statuses. Source IDs, codes and
+raw flags are in per-citation details. Search covers citation text, codes, comments
+and provenance. Individual and all-matching citations can be copied through the
+native clipboard control; bibliography CSV exports include the selected Record ID,
+Reference ID and link type. Both actions include matches beyond the ten initially
+visible related citations. Changing the search or selected record resets pagination.
+Only explicit HTTP(S) URLs or DOI identifiers in citation text produce source links;
+the app does not guess links or claim that those external destinations were verified.
+
+Seven additional tests cover direct/related overlap, exact-reference-only exports,
+search, link extraction, pagination, empty states and HTML escaping. The full suite
+passes **85 tests with no skips**. A real Chrome session against the full database
+also verifies the following:
+
+- Ca²⁺ / phosphoserine has four citation cards from five source links; code `78MA`
+  retains its conflicting `-1`/`0` flags in details.
+- Searching `78MA` exports exactly the matching citation and its conflict status;
+  copying reads the expected citation back from the browser clipboard.
+- A nonexistent search disables export and displays a readable empty state.
+- Pyridine (py) shows the Supplement record's exact Kurihara et al. (1993) citation.
+- The citation panel wraps at a 390-pixel viewport without document-level overflow.
+
+Browser checks report no JavaScript page errors. Preview screenshots were captured
+from these real records, including the expanded original-source metadata.
+
+![Direct citation for a Supplement record](images/reference-direct.png)
+
+![Related citations and exceptional source statuses](images/reference-related.png)
+
+![Search result with original conflicting flags expanded](images/reference-details.png)

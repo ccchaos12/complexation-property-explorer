@@ -701,3 +701,53 @@ button,
     background: var(--color-surface);
   }
 }
+
+/* Bibliography: readable citations first; source bookkeeping is optional. */
+.st-key-reference_panel {
+  border-top: 1px solid var(--color-rule);
+  padding-top: 2rem;
+  margin-top: 1rem;
+}
+.sce-reference-eyebrow {
+  color: #426962;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  font-weight: 650;
+}
+.sce-reference-heading h2 {
+  margin: 0.35rem 0 0.45rem;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+.sce-reference-heading p {
+  color: var(--color-muted);
+  margin: 0 0 0.75rem;
+}
+.sce-reference-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+.sce-reference-tag {
+  color: #526962;
+  font-size: 0.69rem;
+  letter-spacing: 0.08em;
+  font-weight: 650;
+}
+.sce-reference-tag.is-direct { color: #12685c; }
+.sce-reference-note {
+  color: #795218;
+  background: #faf1dc;
+  border: 1px solid #ead8b2;
+  border-radius: 0.3rem;
+  padding: 0.16rem 0.5rem;
+  font-size: 0.75rem;
+}
+.sce-reference-citation {
+  font-size: 1rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  margin: 0 0 0.35rem;
+}

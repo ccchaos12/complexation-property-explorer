@@ -85,14 +85,13 @@ class ReferencePresentationTests(unittest.TestCase):
                 )
                 app.text_input(key="explorer_ligand_text").set_value("EDTA").run()
                 self.assertEqual(list(app.exception), [])
-                table = next(
+                card = next(
                     item.value
-                    for item in app.dataframe
-                    if "Source use status" in item.value.columns
+                    for item in app.markdown
+                    if '<p class="sce-reference-citation">' in item.value
                 )
-                self.assertEqual(table.iloc[0]["Source use status"], "Flagged as not used")
-                self.assertNotIn("Not used flag", table.columns)
-                self.assertNotIn("-1", table.to_numpy().ravel())
+                self.assertIn("Flagged as not used", card)
+                self.assertNotIn("-1", card)
                 self.assertIn("-1", app.dataframe[0].value["Value"].tolist())
                 raw_table = next(
                     item.value
